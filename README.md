@@ -1,5 +1,16 @@
 # sv
 
+## Engineering Constitution
+
+Project delivery follows `.specify/memory/constitution.md`. All feature work must satisfy:
+
+- no broken links and no unhandled 500-path behavior in core flows
+- explicit loading, empty, and error states for impacted journeys
+- strict TypeScript with no `any` in application code
+- modular and reusable frontend components
+- WCAG 2.1 AA and Lighthouse accessibility/performance scores above 90
+- CI/CD with passing unit tests and critical Playwright or Cypress E2E flows
+
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
 ## Creating a project
