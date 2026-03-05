@@ -40,19 +40,19 @@ Users need to create an account and log in to record their animal sightings. Aut
 
 ### User Story 2 - Create Animal Sightings with Auto-Captured Location (Priority: P1)
 
-Users can record animal sightings with automatic location (GPS) and timestamp capture. Location and timestamp are pre-filled but remain editable. If GPS is unavailable, users can enter location manually.
+Users can record animal sightings with automatic location (GPS) and timestamp capture. Location and timestamp are pre-filled but remain editable. If GPS is unavailable, users must manually enter latitude, longitude, and location description.
 
 **Why this priority**: This is the core feature of the app. Users need to be able to quickly log sightings with minimal manual input.
 
-**Independent Test**: Can be tested by creating a sighting in the browser's emulated GPS environment, verifying GPS coordinates and timestamp are pre-filled, then in offline mode, entering location manually and submitting.
+**Independent Test**: Can be tested by creating a sighting in the browser's emulated GPS environment, verifying GPS coordinates and timestamp are pre-filled, then in offline mode, entering latitude, longitude, and location manually and submitting.
 
 **Acceptance Scenarios**:
 
 1. **Given** user is logged in and on the create sighting page, **When** the page loads, **Then** timestamp is auto-filled with current date/time
-2. **Given** GPS permission is granted, **When** the page loads, **Then** location (lat/long) is auto-filled with current GPS coordinates
-3. **Given** GPS permission is granted, **When** user modifies the location field, **Then** the new location is accepted (manual override)
-4. **Given** GPS is unavailable or permission denied, **When** the page loads, **Then** location field is empty and user must enter manually
-5. **Given** user enters an animal name, location, and timestamp, **When** user clicks save, **Then** sighting is created and stored locally (offline-ready)
+2. **Given** GPS permission is granted, **When** the page loads, **Then** latitude and longitude are auto-filled with current GPS coordinates
+3. **Given** GPS permission is granted, **When** user modifies the latitude or longitude fields, **Then** the new coordinates are accepted (manual override)
+4. **Given** GPS is unavailable or permission denied, **When** the page loads, **Then** latitude and longitude fields are empty and user must enter them manually
+5. **Given** user enters an animal name, location description, latitude, longitude, and timestamp, **When** user clicks save, **Then** sighting is created and stored locally (offline-ready)
 6. **Given** an optional picture is selected, **When** user clicks save, **Then** the image is attached (max 1 per sighting)
 7. **Given** user attempts to add a second image, **When** user selects another file, **Then** the previous image is replaced (max 1 only)
 
@@ -131,10 +131,10 @@ All CRUD operations (create, read, update, delete) work offline. When the user g
 - **FR-001**: System MUST authenticate users via email/password login and signup
 - **FR-002**: System MUST automatically capture GPS location (latitude/longitude) when creating a sighting
 - **FR-003**: System MUST automatically capture current timestamp when creating a sighting
-- **FR-004**: System MUST allow users to manually edit location and timestamp after auto-capture
-- **FR-005**: System MUST allow location entry as manual text if GPS is unavailable or denied
+- **FR-004**: System MUST allow users to manually edit latitude, longitude, and timestamp after auto-capture
+- **FR-005**: System MUST require manual entry of latitude and longitude if GPS is unavailable or denied (in addition to text location description)
 - **FR-006**: System MUST accept an optional image attachment with max 1 image per sighting
-- **FR-007**: System MUST store 4 pieces of data per sighting: name, location, timestamp, picture (optional)
+- **FR-007**: System MUST store 5 pieces of data per sighting: name, location (text description), latitude, longitude, timestamp, and optional picture
 - **FR-008**: System MUST display all user sightings in a dashboard list view
 - **FR-009**: System MUST show an image icon indicator in dashboard only when a sighting has an attached image
 - **FR-010**: System MUST display full sighting details (including image) when user clicks a sighting
@@ -159,15 +159,27 @@ All CRUD operations (create, read, update, delete) work offline. When the user g
 ### Key Entities
 
 - **User**: Represents an authenticated user with email, password, and user ID
-- **Sighting**: Represents a recorded animal observation with name, location (lat/long), timestamp, optional image URL
-- **Image**: Represents an optional image file attached to a sighting (max 1 per sighting)
+- **Sighting**: Represents a recorded animal observation with name, location (lat/long), timestamp, and reference to optional image
+- **Image**: Represents an optional image file attached to a sighting (max 1 per sighting, stored in separate table)
+
+---
+
+## Clarifications *(resolved via speckit.clarify)*
+
+### Session 2026-03-05
+
+- Q: Should images be stored in the same table as sightings or in a separate table? If separate, how should API endpoints handle image access? → A: Separate images table with `sighting_id` UNIQUE constraint (1:1 relationship). Sightings include `has_image` boolean. Image CRUD via dedicated `/api/sightings/:id/image` endpoints (POST, GET, DELETE).
+
+- Q: Are latitude and longitude optional when users manually enter location, or are they always required? → A: Latitude and longitude are **ALWAYS required** for every sighting. When GPS is unavailable, users must manually enter latitude, longitude coordinates AND a text location description. No sighting can be created without valid lat/long.
+
+---
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: Users can complete authentication (login/signup) in under 30 seconds
-- **SC-002**: Users can create a sighting with auto-captured location in under 1 minute
+- **SC-002**: Users can create a sighting with auto-captured location in under 1 minute, or with manual lat/long entry in under 2 minutes
 - **SC-003**: Dashboard displays and loads all user sightings in under 2 seconds (cached/offline)
 - **SC-004**: Sync completes all pending changes within 5 seconds of going online (for <100 pending changes)
 - **SC-005**: Image uploads complete within 10 seconds on a 4G connection
