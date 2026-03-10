@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh issue:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx svelte-kit:*)",
+      "Bash(npx svelte-check:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm install:*)",
+      "Bash(node_modules/.bin/tsc --noEmit --pretty)"
+    ]
+  }
+}
