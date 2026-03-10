@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: animal-identifier-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: animal_identifier
+    ports:
+      - "5432:5432"
+    volumes:
+      - animal_identifier_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d animal_identifier"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  animal_identifier_pgdata:
+    driver: local
+
