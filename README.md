@@ -1,4 +1,4 @@
-# sv
+# Animal Identifier
 
 ## Engineering Constitution
 
@@ -11,34 +11,70 @@ Project delivery follows `.specify/memory/constitution.md`. All feature work mus
 - WCAG 2.1 AA and Lighthouse accessibility/performance scores above 90
 - CI/CD with passing unit tests and critical Playwright or Cypress E2E flows
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+## Prerequisites
 
-## Creating a project
+- [Node.js](https://nodejs.org/) (v18+)
+- [Docker Desktop](https://docs.docker.com/get-docker/)
 
-If you're seeing this, you've probably already done this step. Congrats!
+### Installing Docker Desktop
 
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
+**Mac (Homebrew):**
 
 ```sh
-# recreate this project
-npx sv@0.12.5 create --template minimal --types ts --add prettier eslint --install npm ./
+brew install --cask docker
 ```
 
-## Developing
+**Windows (winget):**
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+```powershell
+winget install Docker.DockerDesktop
+```
+
+After installing, open Docker Desktop and wait for it to show "Running" before continuing.
+
+## Getting Started
+
+> For a detailed step-by-step walkthrough, see [docs/getting-started.md](docs/getting-started.md).
+
+### 1. Install dependencies
+
+```sh
+npm install
+```
+
+### 2. Set up the database
+
+**Mac / Linux:**
+
+```sh
+./scripts/setup/setup.sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+.\scripts\setup\setup.ps1
+```
+
+This will:
+- Check that Docker is installed
+- Create a `.env` file from `.env.example` (edit it with your own credentials if needed)
+- Start a PostgreSQL database in Docker
+
+### 3. Start the dev server
 
 ```sh
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
+
+### Useful database commands
+
+| Command | Description |
+|---|---|
+| `docker compose up -d` | Start the database |
+| `docker compose down` | Stop the database (keeps data) |
+| `docker compose down -v` | Stop and delete all data (fresh start) |
+| `docker compose logs db` | View database logs |
 
 ## Building
 
@@ -49,5 +85,3 @@ npm run build
 ```
 
 You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
