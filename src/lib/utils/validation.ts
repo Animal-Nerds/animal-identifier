@@ -35,6 +35,21 @@ export function validateName(name: string): boolean {
     return nameRegex.test(name);
 }
 
+export function validateUrl(url: string): boolean {
+    if (typeof url !== 'string')
+        throw new TypeError('URL must be a string');
+    try {
+        new URL(url);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export function validateDate(val: Date): boolean {
+    return val instanceof Date && !isNaN(val.valueOf());
+}
+
 export function checkForType(value: any, expectedType: string, canBeNull: boolean): boolean {
     if (canBeNull && value === null)
         return true;
@@ -73,20 +88,46 @@ export function validateObjectFromSchema<T extends Record<string, unknown>>(
 
 import { users, type User } from '../db/schema';
 export function validateUserObject(user: User): boolean {
-    return validateObjectFromSchema(user, users);
+    if (!validateObjectFromSchema(user, users))
+        return false;
+    if (!validateEmail(user.email))
+        return false;
+    if (!validateName(user.name))
+        return false;
+    if (user.avatarUrl !== null && !validateUrl(user.avatarUrl))
+        return false;
+    if (!validateDate(user.createdAt))
+        return false;
+    if (!validateDate(user.updatedAt))
+        return false;
+    return true;
 }
 
 import { sessions, type Session } from '../db/schema';
 export function validateSessionObject(session: Session): boolean {
-    return validateObjectFromSchema(session, sessions);
+    if (!validateObjectFromSchema(session, sessions))
+        return false;
+    if (!validateDate(session.expiresAt))
+        return false;
+    if (!validateDate(session.createdAt))
+        return false;
+    return true;
 }
 
 import { sightings, type Sighting } from '../db/schema';
 export function validateSightingObject(sighting: Sighting): boolean {
-    return validateObjectFromSchema(sighting, sightings);
+    if (!validateObjectFromSchema(sighting, sightings))
+        return false;
+    if (!validateDate(sighting.createdAt))
+        return false;
+    return true;
 }
 
 import { images, type Image } from '../db/schema';
 export function validateImageObject(image: Image): boolean {
-    return validateObjectFromSchema(image, images);
+    if (!validateObjectFromSchema(image, images))
+        return false;
+    if (!validateUrl(image.url))
+        return false;
+    return true;
 }
