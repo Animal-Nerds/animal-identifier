@@ -23,10 +23,7 @@
 </script>
 
 <svelte:head>
-	<link rel="manifest" href="/manifest.json" />
 	<title>Animal Identifier</title>
-	<link rel="icon" href="/icon192.png" />
-	<meta name="theme-color" content="#2d5a2d" />
 </svelte:head>
 
 <div class="app-container">
