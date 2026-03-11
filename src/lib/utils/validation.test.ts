@@ -84,6 +84,37 @@ describe('validateName', () => {
     })
 })
 
+import { checkForType } from './validation'
+describe('checkForType', () => {
+    it('should return true for a valid string type', () => {
+        expect(checkForType('hello', 'string', false)).toBe(true)
+    })
+    it('should return true for a valid number type', () => {
+        expect(checkForType(123, 'number', false)).toBe(true)
+    })
+    it('should return true for a valid boolean type', () => {
+        expect(checkForType(true, 'boolean', false)).toBe(true)
+    })
+    it('should return true for a valid date type', () => {
+        expect(checkForType(new Date(), 'date', false)).toBe(true)
+    })
+    it('should return true for a null value when canBeNull is true', () => {
+        expect(checkForType(null, 'string', true)).toBe(true)
+    })
+    it('should return true for a string value when canBeNull is true', () => {
+        expect(checkForType('hello', 'string', true)).toBe(true)
+    })
+    it('should return false for a number value when canBeNull is true', () => {
+        expect(checkForType(123, 'string', true)).toBe(false)
+    })
+    it('should return false for a null value when canBeNull is false', () => {
+        expect(checkForType(null, 'string', false)).toBe(false)
+    })
+    it('should return false for an invalid type', () => {
+        expect(checkForType(123, 'string', false)).toBe(false)
+    })
+})
+
 import type { User } from '../db/schema';
 import { validateUserObject } from './validation'
 describe('validateUserObject', () => {

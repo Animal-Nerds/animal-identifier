@@ -40,7 +40,7 @@ export function validateUserObject(user: User): boolean {
     return validateObjectFromSchema(user, users);
 }
 
-function checkForType(value: any, expectedType: string, canBeNull: boolean): boolean {
+export function checkForType(value: any, expectedType: string, canBeNull: boolean): boolean {
     if (canBeNull && value === null)
         return true;
     if (expectedType === 'date')
@@ -48,24 +48,26 @@ function checkForType(value: any, expectedType: string, canBeNull: boolean): boo
     return typeof value === expectedType;
 }
 
+import { type AnyPgTable, PgColumn } from 'drizzle-orm/pg-core';
+export function validateObjectFromSchema<T extends Record<string, unknown>>(
+    obj: T,
+    schema: AnyPgTable
+): boolean {
+    const schemaRecord = schema as unknown as Record<string, unknown>;
+    const schemaEntries = Object.entries(schemaRecord)
+        .filter((entry): entry is [string, PgColumn] => entry[1] instanceof PgColumn);
 
-
-export function validateObjectFromSchema(obj: any, schema: any): boolean {
-    const schemaKeys = Object.keys(schema).filter(key => key !== 'enableRLS'); // filter out configuration options
-    for (const key of schemaKeys) {
+    for (const [key, column] of schemaEntries) {
+        // ensure all keys in the schema are present in the object
         if (!(key in obj)) {
             throw new TypeError(`Field ${key} is missing from the object`);
         }
-    }
 
-    for (const key of schemaKeys) {
-        console.log(key);
-        
-        if (!schema[key].notNull && obj[key] === null)
+        if (!column.notNull && obj[key] === null)
             continue;
-        const typeOfSchemaField = schema[key].dataType;
+        const typeOfSchemaField = column.dataType;
         const typeOfObjField = typeof obj[key];
-        if (!checkForType(obj[key], typeOfSchemaField, !schema[key].notNull)) {
+        if (!checkForType(obj[key], typeOfSchemaField, !column.notNull)) {
             throw new TypeError(`Type of field ${key} does not match schema. Expected ${typeOfSchemaField}, got ${typeOfObjField}`);
         }
     }
