@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { validateEmail, validatePassword, validateUsername } from './validation'
 
+import { validateEmail } from './validation'
 describe('validateEmail', () => {
     it('should return true for a valid email', () => {
         expect(validateEmail('test@example.com')).toBe(true)
@@ -17,6 +17,8 @@ describe('validateEmail', () => {
     })
 })
 
+
+import { validatePassword } from './validation'
 describe('validatePassword', () => {
     it('should return true for a valid password', () => {
         expect(validatePassword('Password123!')).toBe(true)
@@ -42,6 +44,7 @@ describe('validatePassword', () => {
     })
 })
 
+import { validateUsername } from './validation'
 describe('validateUsername', () => {
     it('should return true for a valid username', () => {
         expect(validateUsername('valid_username')).toBe(true)
@@ -60,3 +63,39 @@ describe('validateUsername', () => {
         expect(() => validateUsername(123)).toThrow(TypeError)
     })
 })
+
+import { validateName } from './validation'
+describe('validateName', () => {
+    it('should return true for a valid name', () => {
+        expect(validateName('John Doe')).toBe(true)
+    })
+    it('should return false for a name that is too short', () => {
+        expect(validateName('J')).toBe(false)
+    })
+    it('should return false for a name that is too long', () => {
+        expect(validateName('J'.repeat(51))).toBe(false)
+    })
+    it('should return false for a name with invalid characters', () => {
+        expect(validateName('John_Doe')).toBe(false)
+    })
+    it('should throw a TypeError for a non-string input', () => {
+        // @ts-ignore
+        expect(() => validateName(123)).toThrow(TypeError)
+    })
+})
+
+import type { User } from '../db/schema';
+import { validateUserObject } from './validation'
+describe('validateUserObject', () => {
+    it('should return true for a valid user object', () => {
+        const user = {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            email: 'test@example.com',
+            name: 'John Doe',
+            avatarUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        } as User;
+        expect(validateUserObject(user)).toBe(true);
+    });
+});

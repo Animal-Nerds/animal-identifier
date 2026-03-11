@@ -1,8 +1,3 @@
-
-
-
-
-
 // must be a valid email address
 export function validateEmail(email: string): boolean {
     if (typeof email !== 'string')
@@ -20,7 +15,7 @@ export function validatePassword(password: string): boolean {
     return passwordRegex.test(password);
 }
 
-// cannot have anything except numbers, letters, underscores, and hyphens
+// cannot have anything except numbers, letters, underscores, and hyphens, and be between 3 and 20 characters long
 export function validateUsername(username: string): boolean {
     if (typeof username !== 'string')
         throw new TypeError('Username must be a string');
@@ -28,4 +23,51 @@ export function validateUsername(username: string): boolean {
         return false;
     const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
     return usernameRegex.test(username);
+}
+
+// must only contain letters and spaces, and be between 2 and 50 characters long
+export function validateName(name: string): boolean {
+    if (typeof name !== 'string')
+        throw new TypeError('Name must be a string');
+    if (name.length < 2 || name.length > 50)
+        return false;
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    return nameRegex.test(name);
+}
+
+import { users, type User } from '../db/schema';
+export function validateUserObject(user: User): boolean {
+    return validateObjectFromSchema(user, users);
+}
+
+function checkForType(value: any, expectedType: string, canBeNull: boolean): boolean {
+    if (canBeNull && value === null)
+        return true;
+    if (expectedType === 'date')
+        return value instanceof Date;
+    return typeof value === expectedType;
+}
+
+
+
+export function validateObjectFromSchema(obj: any, schema: any): boolean {
+    const schemaKeys = Object.keys(schema).filter(key => key !== 'enableRLS'); // filter out configuration options
+    for (const key of schemaKeys) {
+        if (!(key in obj)) {
+            throw new TypeError(`Field ${key} is missing from the object`);
+        }
+    }
+
+    for (const key of schemaKeys) {
+        console.log(key);
+        
+        if (!schema[key].notNull && obj[key] === null)
+            continue;
+        const typeOfSchemaField = schema[key].dataType;
+        const typeOfObjField = typeof obj[key];
+        if (!checkForType(obj[key], typeOfSchemaField, !schema[key].notNull)) {
+            throw new TypeError(`Type of field ${key} does not match schema. Expected ${typeOfSchemaField}, got ${typeOfObjField}`);
+        }
+    }
+    return true;
 }
