@@ -35,11 +35,6 @@ export function validateName(name: string): boolean {
     return nameRegex.test(name);
 }
 
-import { users, type User } from '../db/schema';
-export function validateUserObject(user: User): boolean {
-    return validateObjectFromSchema(user, users);
-}
-
 export function checkForType(value: any, expectedType: string, canBeNull: boolean): boolean {
     if (canBeNull && value === null)
         return true;
@@ -72,4 +67,26 @@ export function validateObjectFromSchema<T extends Record<string, unknown>>(
         }
     }
     return true;
+}
+
+
+
+import { users, type User } from '../db/schema';
+export function validateUserObject(user: User): boolean {
+    return validateObjectFromSchema(user, users);
+}
+
+import { sessions, type Session } from '../db/schema';
+export function validateSessionObject(session: Session): boolean {
+    return validateObjectFromSchema(session, sessions);
+}
+
+import { sightings, type Sighting } from '../db/schema';
+export function validateSightingObject(sighting: Sighting): boolean {
+    return validateObjectFromSchema(sighting, sightings);
+}
+
+import { images, type Image } from '../db/schema';
+export function validateImageObject(image: Image): boolean {
+    return validateObjectFromSchema(image, images);
 }

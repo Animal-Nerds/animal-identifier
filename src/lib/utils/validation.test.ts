@@ -130,3 +130,55 @@ describe('validateUserObject', () => {
         expect(validateUserObject(user)).toBe(true);
     });
 });
+
+import type { Session } from '../db/schema';
+import { validateSessionObject } from './validation'
+describe('validateSessionObject', () => {
+    it('should return true for a valid session object', () => {
+        const session = {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            userId: '123e4567-e89b-12d3-a456-426614174000',
+            token: 'some-random-token',
+            expiresAt: new Date(Date.now() + 1000 * 60 * 60), // expires in 1 hour
+            createdAt: new Date()
+        } as Session;
+        expect(validateSessionObject(session)).toBe(true);
+    });
+});
+
+
+import type { Sighting } from '../db/schema';
+import { validateSightingObject } from './validation'
+describe('validateSightingObject', () => {
+    it('should return true for a valid sighting object', () => {
+        const sighting = {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            userId: '123e4567-e89b-12d3-a456-426614174000',
+            species: 'Bald Eagle',
+            description: 'Spotted near the river',
+            latitude: 45.123456,
+            longitude: -122.123456,
+            sightedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        } as Sighting;
+        expect(validateSightingObject(sighting)).toBe(true);
+    });
+});
+
+
+import type { Image } from '../db/schema';
+import { validateImageObject } from './validation'
+describe('validateImageObject', () => {
+    it('should return true for a valid image object', () => {
+        const image = {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            sightingId: '123e4567-e89b-12d3-a456-426614174000',
+            url: 'https://example.com/image.jpg',
+            altText: 'A photo of a bald eagle',
+            order: 1,
+            createdAt: new Date()
+        } as Image;
+        expect(validateImageObject(image)).toBe(true);
+    });
+});
