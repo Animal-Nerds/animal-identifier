@@ -53,4 +53,9 @@ declare global {
 		FAILED = "FAILED",
 		OFFLINE = "OFFLINE"
 	}
+
+	interface ValidationResult {
+		valid: boolean;
+		errors: string[];
+	}
 }
