@@ -3,17 +3,17 @@ import { describe, it, expect } from 'vitest'
 import { validateEmail } from './validation'
 describe('validateEmail', () => {
     it('should return true for a valid email', () => {
-        expect(validateEmail('test@example.com')).toBe(true)
+        expect(validateEmail('test@example.com').valid).toBe(true)
     })
     it('should return true for a valid email with extra characters', () => {
-        expect(validateEmail('test.user@my-site.example.com')).toBe(true)
+        expect(validateEmail('test.user@my-site.example.com').valid).toBe(true)
     })
     it('should return false for an invalid email', () => {
-        expect(validateEmail('invalid-email')).toBe(false)
+        expect(validateEmail('invalid-email').valid).toBe(false)
     })
-    it('should throw a TypeError for a non-string input', () => {
+    it('should return false for a non-string input', () => {
         // @ts-ignore
-        expect(() => validateEmail(123)).toThrow(TypeError)
+        expect(validateEmail(123).valid).toBe(false)
     })
 })
 
@@ -21,66 +21,66 @@ describe('validateEmail', () => {
 import { validatePassword } from './validation'
 describe('validatePassword', () => {
     it('should return true for a valid password', () => {
-        expect(validatePassword('Password123!')).toBe(true)
+        expect(validatePassword('Password123!').valid).toBe(true)
     })
     it('should return false for missing uppercase letter', () => {
-        expect(validatePassword('password123!')).toBe(false)
+        expect(validatePassword('password123!').valid).toBe(false)
     })
     it('should return false for missing lowercase letter', () => {
-        expect(validatePassword('PASSWORD123!')).toBe(false)
+        expect(validatePassword('PASSWORD123!').valid).toBe(false)
     })
     it('should return false for missing number', () => {
-        expect(validatePassword('Password!')).toBe(false)
+        expect(validatePassword('Password!').valid).toBe(false)
     })
     it('should return false for missing special character', () => {
-        expect(validatePassword('Password123')).toBe(false)
+        expect(validatePassword('Password123').valid).toBe(false)
     })
     it('should return false for not meeting length requirement', () => {
-        expect(validatePassword('Pass1!')).toBe(false)
+        expect(validatePassword('Pass1!').valid).toBe(false)
     })
-    it('should throw a TypeError for a non-string input', () => {
+    it('should return false for a non-string input', () => {
         // @ts-ignore
-        expect(() => validatePassword(123)).toThrow(TypeError)
+        expect(validatePassword(123).valid).toBe(false)
     })
 })
 
 import { validateUsername } from './validation'
 describe('validateUsername', () => {
     it('should return true for a valid username', () => {
-        expect(validateUsername('valid_username')).toBe(true)
+        expect(validateUsername('valid_username').valid).toBe(true)
     })
     it('should return false for a username that is too short', () => {
-        expect(validateUsername('ab')).toBe(false)
+        expect(validateUsername('ab').valid).toBe(false)
     })
     it('should return false for a username that is too long', () => {
-        expect(validateUsername('a'.repeat(21))).toBe(false)
+        expect(validateUsername('a'.repeat(21)).valid).toBe(false)
     })
     it('should return false for a username with invalid characters', () => {
-        expect(validateUsername('invalid@username')).toBe(false)
+        expect(validateUsername('invalid@username').valid).toBe(false)
     })
-    it('should throw a TypeError for a non-string input', () => {
+    it('should return false for a non-string input', () => {
         // @ts-ignore
-        expect(() => validateUsername(123)).toThrow(TypeError)
+        expect(validateUsername(123).valid).toBe(false)
     })
 })
 
 import { validateName } from './validation'
 describe('validateName', () => {
     it('should return true for a valid name', () => {
-        expect(validateName('John Doe')).toBe(true)
+        expect(validateName('John Doe').valid).toBe(true)
     })
     it('should return false for a name that is too short', () => {
-        expect(validateName('J')).toBe(false)
+        expect(validateName('J').valid).toBe(false)
     })
     it('should return false for a name that is too long', () => {
-        expect(validateName('J'.repeat(51))).toBe(false)
+        expect(validateName('J'.repeat(51)).valid).toBe(false)
     })
     it('should return false for a name with invalid characters', () => {
-        expect(validateName('John_Doe')).toBe(false)
+        expect(validateName('John_Doe').valid).toBe(false)
     })
-    it('should throw a TypeError for a non-string input', () => {
+    it('should return false for a non-string input', () => {
         // @ts-ignore
-        expect(() => validateName(123)).toThrow(TypeError)
+        expect(validateName(123).valid).toBe(false)
     })
 })
 
@@ -127,7 +127,7 @@ describe('validateUserObject', () => {
             createdAt: new Date(),
             updatedAt: new Date()
         } as User;
-        expect(validateUserObject(user)).toBe(true);
+        expect(validateUserObject(user).valid).toBe(true);
     });
 });
 
@@ -142,7 +142,7 @@ describe('validateSessionObject', () => {
             expiresAt: new Date(Date.now() + 1000 * 60 * 60), // expires in 1 hour
             createdAt: new Date()
         } as Session;
-        expect(validateSessionObject(session)).toBe(true);
+        expect(validateSessionObject(session).valid).toBe(true);
     });
 });
 
@@ -162,7 +162,7 @@ describe('validateSightingObject', () => {
             createdAt: new Date(),
             updatedAt: new Date()
         } as Sighting;
-        expect(validateSightingObject(sighting)).toBe(true);
+        expect(validateSightingObject(sighting).valid).toBe(true);
     });
 });
 
@@ -179,6 +179,6 @@ describe('validateImageObject', () => {
             order: 1,
             createdAt: new Date()
         } as Image;
-        expect(validateImageObject(image)).toBe(true);
+        expect(validateImageObject(image).valid).toBe(true);
     });
 });
