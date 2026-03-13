@@ -1,3 +1,5 @@
+import { VALIDATION } from './constants';
+
 // helper function to return a ValidationResult object
 const returnValidationResult = (errors: string[] = []): ValidationResult => ({
     valid: errors.length === 0,
@@ -22,7 +24,7 @@ export function validatePassword(password: string): ValidationResult {
     let errors: string[] = [];
     if (typeof password !== 'string')
         errors.push('Password must be a string');
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex = new RegExp(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{${VALIDATION.PASSWORD.MIN_LENGTH},}$`);
     if (!passwordRegex.test(password))
         errors.push('Password is not valid');
 
@@ -34,8 +36,8 @@ export function validateUsername(username: string): ValidationResult {
     let errors: string[] = [];
     if (typeof username !== 'string')
         errors.push('Username must be a string');
-    if (username.length < 3 || username.length > 20)
-        errors.push('Username must be between 3 and 20 characters long');
+    if (username.length < VALIDATION.USERNAME.MIN_LENGTH || username.length > VALIDATION.USERNAME.MAX_LENGTH)
+        errors.push(`Username must be between ${VALIDATION.USERNAME.MIN_LENGTH} and ${VALIDATION.USERNAME.MAX_LENGTH} characters long`);
 
     const usernameRegex = /^[a-zA-Z0-9_\-]+$/;
     if (!usernameRegex.test(username))
@@ -49,8 +51,8 @@ export function validateName(name: string): ValidationResult {
     let errors: string[] = [];
     if (typeof name !== 'string')
         errors.push('Name must be a string');
-    if (name.length < 2 || name.length > 50)
-        errors.push('Name must be between 2 and 50 characters long');
+    if (name.length < VALIDATION.NAME.MIN_LENGTH || name.length > VALIDATION.NAME.MAX_LENGTH)
+        errors.push(`Name must be between ${VALIDATION.NAME.MIN_LENGTH} and ${VALIDATION.NAME.MAX_LENGTH} characters long`);
 
     const nameRegex = /^[a-zA-Z\s]+$/;
     if (!nameRegex.test(name))
