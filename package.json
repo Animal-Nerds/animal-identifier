@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"test": "vitest",
-		"predev": "docker compose up -d",
+		"setup": "node ./scripts/setup/setup.js",
+		"predev": "node ./scripts/setup/enforce-setup.js",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
@@ -41,8 +42,10 @@
 	},
 	"dependencies": {
 		"bcrypt": "^6.0.0",
+		"@tailwindcss/vite": "^4.2.1",
 		"dotenv": "^17.3.1",
 		"drizzle-orm": "^0.45.1",
-		"pg": "^8.20.0"
+		"pg": "^8.20.0",
+		"tailwindcss": "^4.2.1"
 	}
 }
