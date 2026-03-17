@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { auth } from '$lib/stores/auth';
+	import type { User } from '$lib/db/schema';
 
 	let isOpen = $state(false);
+	let { user = null } = $props<{ user?: User | null }>();
 </script>
 
 <header class="app-header">
@@ -10,28 +11,19 @@
 			<h1>Animal Identifier</h1>
 		</div>
 
-        <div class="user-section {$auth.isAuthenticated ? '' : 'hidden'}">
+        <div class="user-section {user ? '' : 'hidden'}">
             <button class="menu-toggle" onclick={() => (isOpen = !isOpen)} aria-label="Menu">
                 ☰
             </button>
-            {#if $auth.isAuthenticated && isOpen}
+            {#if user && isOpen}
             <nav class="dropdown-menu">
                     <div class="user-info">
-                        <p class="user-email">{$auth.userEmail}</p>
+                        <p class="user-email">{user.email}</p>
                     </div>
                     <ul>
                         <li><a href="/">Home</a></li>
                         <li><a href="/sightings">Sightings</a></li>
                     </ul>
-                    <button
-                        class="logout-btn"
-                        onclick={() => {
-                            auth.logout();
-                            isOpen = false;
-                        }}
-                    >
-                        Logout
-                    </button>
                 </nav>
             {/if}
         </div>
