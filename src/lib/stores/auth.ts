@@ -29,7 +29,9 @@ function createAuthStore() {
 	return {
 		subscribe,
 		login: (email: string) => {
-			localStorage.setItem(STORAGE_KEY, 'mock_token_' + Date.now());
+			const token = 'mock_token_' + Date.now();
+			localStorage.setItem(STORAGE_KEY, token);
+			document.cookie = `${STORAGE_KEY}=${token}; path=/;`;
 			set({
 				isAuthenticated: true,
 				userEmail: email
@@ -37,6 +39,7 @@ function createAuthStore() {
 		},
 		logout: () => {
 			localStorage.removeItem(STORAGE_KEY);
+			document.cookie = `${STORAGE_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 			set({
 				isAuthenticated: false,
 				userEmail: null
