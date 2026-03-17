@@ -77,7 +77,6 @@
 				return;
 			}
 
-			// success
 			goto('/dashboard');
 		} catch (err: unknown) {
 			errors.server = 'Something went wrong. Please try again.';
@@ -155,52 +154,3 @@
 		<a href="/auth/login">Log in</a>
 	</p>
 </div>
-
-<style>
-	.container {
-		max-width: 400px;
-		margin: 2rem auto;
-		padding: 1rem;
-	}
-
-	h1 {
-		margin-bottom: 1.5rem;
-	}
-
-	.field {
-		margin-bottom: 1rem;
-		display: flex;
-		flex-direction: column;
-	}
-
-	label {
-		margin-bottom: 0.25rem;
-		font-weight: 500;
-	}
-
-	input {
-		padding: 0.5rem;
-		font-size: 1rem;
-	}
-
-	button {
-		width: 100%;
-		padding: 0.75rem;
-		margin-top: 1rem;
-		cursor: pointer;
-	}
-
-	.error {
-		color: red;
-		font-size: 0.875rem;
-	}
-
-	.server {
-		margin-top: 0.5rem;
-	}
-
-	.login-link {
-		margin-top: 1rem;
-		text-align: center;
-	}
-</style>
