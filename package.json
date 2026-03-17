@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"test": "vitest",
-		"predev": "docker compose up -d",
+		"setup": "node ./scripts/setup/setup.js",
+		"predev": "node ./scripts/setup/enforce-setup.js",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
