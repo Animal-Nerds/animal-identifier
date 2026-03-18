@@ -17,18 +17,27 @@ export interface SightingsStoreState {
 	error: string | null;
 	initialized: boolean;
 }
+if (typeof localStorage === 'undefined') {
+    // Mock localStorage for server-side rendering
+    globalThis.localStorage = (() => {
+        let store = {} as Record<string, string>;
+        return {
+            getItem: (key:string) => store[key] || null, // Returns null for undefined keys, like real localStorage
+            setItem: (key: string, value: string) => { store[key] = value.toString(); },
+            removeItem: (key: string) => { delete store[key]; },
+            clear: () => { store = {}; },
+            key: (index: number) => Object.keys(store)[index] || null,
+            get length() { return Object.keys(store).length; }
+        };
+    })();
+}
 
 // ─── Internal Utilities ──────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'sightings_cache';
 const PENDING_DELETES_KEY = 'sightings_pending_deletes';
 
-function isClient(): boolean {
-	return typeof window !== 'undefined';
-}
-
 function persistToLocalStorage(sightings: Sighting[]): void {
-	if (!isClient()) return;
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(sightings));
 	} catch (err) {
@@ -37,7 +46,6 @@ function persistToLocalStorage(sightings: Sighting[]): void {
 }
 
 function loadFromLocalStorage(): Sighting[] {
-	if (!isClient()) return [];
 	try {
 		const cached = localStorage.getItem(STORAGE_KEY);
 		return cached ? JSON.parse(cached) : [];
@@ -48,7 +56,6 @@ function loadFromLocalStorage(): Sighting[] {
 }
 
 function persistPendingDeletes(ids: string[]): void {
-	if (!isClient()) return;
 	try {
 		localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(ids));
 	} catch (err) {
@@ -57,7 +64,6 @@ function persistPendingDeletes(ids: string[]): void {
 }
 
 function loadPendingDeletes(): string[] {
-	if (!isClient()) return [];
 	try {
 		const cached = localStorage.getItem(PENDING_DELETES_KEY);
 		return cached ? JSON.parse(cached) : [];
@@ -90,9 +96,9 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 	constructor(thisSightingsService: typeof sightingsService = sightingsService) {
 		this.sightingsService = thisSightingsService;
-		if (isClient()) {
-			window.addEventListener('online', this.handleOnline);
-		}
+        if (typeof window !== 'undefined') {
+            window.addEventListener('online', this.handleOnline);
+        }
 	}
 
 	public subscribe: Readable<SightingsStoreState>['subscribe'] = this.store.subscribe;
@@ -136,7 +142,6 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	}
 
 	async syncPendingAndReload(): Promise<void> {
-		if (!isClient()) return;
 
 		this.store?.update((s) => ({ ...s, loading: true, error: null }));
 
@@ -232,7 +237,6 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	}
 
 	async init(): Promise<void> {
-		if (!isClient()) return;
 		this.store.update((s) => ({ ...s, initialized: true }));
 		try {
 			await this.syncPendingAndReload();
@@ -246,7 +250,6 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	}
 
 	async add(data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>): Promise<void> {
-		if (!isClient()) return;
 		const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 		this.store.update((s) => {
 			const sighting: Sighting = {
@@ -288,7 +291,6 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	}
 
 	async update(id: string, data: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId'>>): Promise<void> {
-		if (!isClient()) return;
 		this.store.update((s) => {
 			const idx = findSightingIndex(s.sightings, id);
 			if (idx > -1) {
@@ -330,7 +332,6 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	}
 
 	async remove(id: string): Promise<void> {
-		if (!isClient()) return;
 		this.store.update((s) => {
 			const idx = findSightingIndex(s.sightings, id);
 			if (idx > -1) {
@@ -366,9 +367,9 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 export const sightings = new SightingsStore();
 
+export const SightingsStoreClass = SightingsStore;
+
 // Auto-initialize
-if (isClient()) {
-	sightings.init().catch((err) => {
-		console.error('Store init failed:', err);
-	});
-}
+sightings.init().catch((err) => {
+    console.error('Store init failed:', err);
+});

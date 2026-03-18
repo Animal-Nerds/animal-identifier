@@ -1,9 +1,9 @@
-let offline = false;
-const sightingsServiceTest = {
-    getSightings: async (): Promise<Sighting[]> => {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+class sightingsServiceClass {
+    private offline = false;
+    async getSightings (): Promise<Sighting[]> {
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        if (offline)
+        if (this.offline)
             throw new Error('Network error: Unable to fetch sightings');
 
         return [
@@ -21,11 +21,11 @@ const sightingsServiceTest = {
                 syncStatus: 'SYNCED' as SyncStatus
             } as Sighting
         ];
-    },
-    createSighting: async (data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>): Promise<Sighting> => {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    async createSighting (data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>): Promise<Sighting> {
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        if (offline)
+        if (this.offline)
             throw new Error('Network error: Unable to create sighting');
 
         return {
@@ -35,14 +35,14 @@ const sightingsServiceTest = {
             updatedAt: new Date().toISOString(),
             syncStatus: 'SYNCED' as SyncStatus
         } as Sighting;
-    },
-    updateSighting: async (
+    }
+    async updateSighting (
         id: string,
         data: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>>
-    ): Promise<Sighting> => {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    ): Promise<Sighting> {
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        if (offline)
+        if (this.offline)
             throw new Error('Network error: Unable to update sighting');
 
         return {
@@ -52,15 +52,45 @@ const sightingsServiceTest = {
             updatedAt: new Date().toISOString(),
             syncStatus: 'SYNCED' as SyncStatus
         } as Sighting;
-    },
-    deleteSighting: async (id: string): Promise<{ success: boolean }> => {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    async deleteSighting (id: string): Promise<{ success: boolean }> {
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        if (offline)
+        if (this.offline)
             throw new Error('Network error: Unable to delete sighting');
 
         return { success: true };
     }
+    setOffline(value: boolean) {
+        this.offline = value;
+    }
 };
-export { sightingsServiceTest };
+export const sightingsServiceTest = new sightingsServiceClass();
 
+import { describe, it, expect } from 'vitest'
+import { SightingsStoreClass } from './sightings';
+import type { sightingsService } from '$lib/services/sightings';
+
+type MockSightingsService = typeof sightingsService & {
+    setOffline: (value: boolean) => void;
+};
+
+describe('sightings store', async () => {
+    it('should have 0 sightings when offline', async () => {
+        let service = new sightingsServiceClass() as MockSightingsService;
+        const sightings = new SightingsStoreClass(service);
+        service.setOffline(true);
+        await sightings.init()
+        const state = sightings.getAllSightings()
+        expect(state.length).toBe(0)
+    });
+    
+    it('should have 1 sighting when online', async () => {
+        let service = new sightingsServiceClass() as MockSightingsService;
+        const sightings = new SightingsStoreClass(service);
+        service.setOffline(false);
+        await sightings.init()
+        const state = sightings.getAllSightings()
+        expect(state.length).toBe(1)
+    });
+})
