@@ -1,4 +1,4 @@
-import { writable, type Readable } from 'svelte/store';
+import { get, writable, type Readable } from 'svelte/store';
 import * as sightingsService from '../services/sightings';
 
 /**
@@ -59,190 +59,190 @@ function findSightingIndex(sightings: Sighting[], id: string): number {
 
 // ─── Create Store ────────────────────────────────────────────────────────────
 
-function createSightingsStore() {
-	const initialState: SightingsStoreState = {
+class SightingsStore implements Readable<SightingsStoreState> {
+	private readonly store = writable<SightingsStoreState>({
 		sightings: loadFromLocalStorage(),
 		loading: false,
 		error: null,
 		initialized: false
-	};
+	});
 
-	const { subscribe, set, update } = writable<SightingsStoreState>(initialState);
+	public subscribe: Readable<SightingsStoreState>['subscribe'] = this.store.subscribe;
 
-	// Load function
-	const load = async () => {
+	getAllSightings(): Sighting[] {
+		return [...get(this.store).sightings];
+	}
+
+	async init(): Promise<void> {
 		if (!isClient()) return;
-		update((s) => ({ ...s, loading: true, error: null }));
+		this.store.update((s) => ({ ...s, initialized: true }));
+		try {
+			await this.load();
+		} catch (err) {
+			console.error('Auto-load failed:', err);
+		}
+	}
+
+	async load(): Promise<void> {
+		if (!isClient()) return;
+		this.store.update((s) => ({ ...s, loading: true, error: null }));
 		try {
 			const result = await sightingsService.getSightings();
-			update((s) => ({
+			this.store.update((s) => ({
 				...s,
 				sightings: result.map((item) => ({
 					...item,
-					syncStatus: (item.syncStatus || 'SYNCED') as SyncStatus
+					syncStatus: (item.syncStatus || SyncStatus.SYNCED) as SyncStatus
 				})),
 				error: null
 			}));
-			update((s) => {
+			this.store.update((s) => {
 				persistToLocalStorage(s.sightings);
 				return s;
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to load';
-			update((s) => ({ ...s, error: msg }));
+			this.store.update((s) => ({ ...s, error: msg }));
 			const cached = loadFromLocalStorage();
 			if (cached.length > 0) {
-				update((s) => ({ ...s, sightings: cached }));
+				this.store.update((s) => ({ ...s, sightings: cached }));
 			}
 		} finally {
-			update((s) => ({ ...s, loading: false }));
+			this.store.update((s) => ({ ...s, loading: false }));
 		}
-	};
+	}
 
-	return {
-		subscribe,
+	async add(data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>): Promise<void> {
+		if (!isClient()) return;
+		let snapshot: SightingsStoreState | null = null;
+		this.store.update((s) => {
+			snapshot = createSnapshot(s);
+			return s;
+		});
 
-		init: async () => {
-			if (!isClient()) return;
-			update((s) => ({ ...s, initialized: true }));
-			try {
-				await load();
-			} catch (err) {
-				console.error('Auto-load failed:', err);
-			}
-		},
+		const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		this.store.update((s) => {
+			const sighting: Sighting = {
+				...(data as Sighting),
+				id: tempId,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+				syncStatus: SyncStatus.PENDING
+			};
+			const newList = [...s.sightings, sighting];
+			persistToLocalStorage(newList);
+			return { ...s, sightings: newList, error: null };
+		});
 
-		load,
-
-		add: async (data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>) => {
-			if (!isClient()) return;
-			let snapshot: SightingsStoreState | null = null;
-			update((s) => {
-				snapshot = createSnapshot(s);
+		try {
+			this.store.update((s) => ({ ...s, loading: true }));
+			const created = await sightingsService.createSighting(data);
+			this.store.update((s) => {
+				const idx = findSightingIndex(s.sightings, tempId);
+				if (idx > -1) {
+					s.sightings[idx] = { ...created, syncStatus: SyncStatus.PENDING };
+				}
+				persistToLocalStorage(s.sightings);
 				return s;
 			});
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Failed to add';
+			const rollbackSnapshot = snapshot;
+			if (rollbackSnapshot) {
+				this.store.set(rollbackSnapshot);
+				persistToLocalStorage(get(this.store).sightings);
+			}
+			this.store.update((s) => ({ ...s, error: msg }));
+		} finally {
+			this.store.update((s) => ({ ...s, loading: false }));
+		}
+	}
 
-			const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-			update((s) => {
-				const sighting: Sighting = {
-					...(data as Sighting),
-					id: tempId,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-					syncStatus: 'PENDING' as SyncStatus
+	async update(id: string, data: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId'>>): Promise<void> {
+		if (!isClient()) return;
+		let snapshot: SightingsStoreState | null = null;
+		this.store.update((s) => {
+			snapshot = createSnapshot(s);
+			return s;
+		});
+
+		this.store.update((s) => {
+			const idx = findSightingIndex(s.sightings, id);
+			if (idx > -1) {
+				s.sightings[idx] = {
+					...s.sightings[idx],
+					...data,
+					syncStatus: SyncStatus.PENDING,
+					updatedAt: new Date().toISOString()
 				};
-				const newList = [...s.sightings, sighting];
-				persistToLocalStorage(newList);
-				return { ...s, sightings: newList, error: null };
-			});
-
-			try {
-				update((s) => ({ ...s, loading: true }));
-				const created = await sightingsService.createSighting(data);
-				update((s) => {
-					const idx = findSightingIndex(s.sightings, tempId);
-					if (idx > -1) {
-						s.sightings[idx] = { ...created, syncStatus: 'SYNCED' as SyncStatus };
-					}
-					persistToLocalStorage(s.sightings);
-					return s;
-				});
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : 'Failed to add';
-				if (snapshot !== null) {
-					set(snapshot);
-					persistToLocalStorage((snapshot as SightingsStoreState).sightings);
-				}
-				update((s) => ({ ...s, error: msg }));
-			} finally {
-				update((s) => ({ ...s, loading: false }));
 			}
-		},
+			persistToLocalStorage(s.sightings);
+			return { ...s, error: null };
+		});
 
-		update: async (id: string, data: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId'>>) => {
-			if (!isClient()) return;
-			let snapshot: SightingsStoreState | null = null;
-			update((s) => {
-				snapshot = createSnapshot(s);
-				return s;
-			});
-
-			update((s) => {
+		try {
+			this.store.update((s) => ({ ...s, loading: true }));
+			const result = await sightingsService.updateSighting(id, data);
+			this.store.update((s) => {
 				const idx = findSightingIndex(s.sightings, id);
 				if (idx > -1) {
-					s.sightings[idx] = {
-						...s.sightings[idx],
-						...data,
-						syncStatus: 'PENDING' as SyncStatus,
-						updatedAt: new Date().toISOString()
-					};
+					s.sightings[idx] = { ...result, syncStatus: SyncStatus.SYNCED };
 				}
 				persistToLocalStorage(s.sightings);
-				return { ...s, error: null };
-			});
-
-			try {
-				update((s) => ({ ...s, loading: true }));
-				const result = await sightingsService.updateSighting(id, data);
-				update((s) => {
-					const idx = findSightingIndex(s.sightings, id);
-					if (idx > -1) {
-						s.sightings[idx] = { ...result, syncStatus: 'SYNCED' as SyncStatus };
-					}
-					persistToLocalStorage(s.sightings);
-					return s;
-				});
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : 'Failed to update';
-				if (snapshot !== null) {
-					set(snapshot);
-					persistToLocalStorage((snapshot as SightingsStoreState).sightings);
-				}
-				update((s) => ({ ...s, error: msg }));
-			} finally {
-				update((s) => ({ ...s, loading: false }));
-			}
-		},
-
-		remove: async (id: string) => {
-			if (!isClient()) return;
-			let snapshot: SightingsStoreState | null = null;
-			update((s) => {
-				snapshot = createSnapshot(s);
 				return s;
 			});
-
-			update((s) => {
-				const idx = findSightingIndex(s.sightings, id);
-				if (idx > -1) {
-					s.sightings.splice(idx, 1);
-				}
-				persistToLocalStorage(s.sightings);
-				return { ...s, error: null };
-			});
-
-			try {
-				update((s) => ({ ...s, loading: true }));
-				await sightingsService.deleteSighting(id);
-				update((s) => {
-					persistToLocalStorage(s.sightings);
-					return s;
-				});
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : 'Failed to remove';
-				if (snapshot !== null) {
-					set(snapshot);
-					persistToLocalStorage((snapshot as SightingsStoreState).sightings);
-				}
-				update((s) => ({ ...s, error: msg }));
-			} finally {
-				update((s) => ({ ...s, loading: false }));
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Failed to update';
+			const rollbackSnapshot = snapshot;
+			if (rollbackSnapshot) {
+				this.store.set(rollbackSnapshot);
+				persistToLocalStorage(get(this.store).sightings);
 			}
+			this.store.update((s) => ({ ...s, error: msg }));
+		} finally {
+			this.store.update((s) => ({ ...s, loading: false }));
 		}
-	};
+	}
+
+	async remove(id: string): Promise<void> {
+		if (!isClient()) return;
+		let snapshot: SightingsStoreState | null = null;
+		this.store.update((s) => {
+			snapshot = createSnapshot(s);
+			return s;
+		});
+
+		this.store.update((s) => {
+			const idx = findSightingIndex(s.sightings, id);
+			if (idx > -1) {
+				s.sightings.splice(idx, 1);
+			}
+			persistToLocalStorage(s.sightings);
+			return { ...s, error: null };
+		});
+
+		try {
+			this.store.update((s) => ({ ...s, loading: true }));
+			await sightingsService.deleteSighting(id);
+			this.store.update((s) => {
+				persistToLocalStorage(s.sightings);
+				return s;
+			});
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : 'Failed to remove';
+			const rollbackSnapshot = snapshot;
+			if (rollbackSnapshot) {
+				this.store.set(rollbackSnapshot);
+				persistToLocalStorage(get(this.store).sightings);
+			}
+			this.store.update((s) => ({ ...s, error: msg }));
+		} finally {
+			this.store.update((s) => ({ ...s, loading: false }));
+		}
+	}
 }
 
-export const sightings = createSightingsStore();
+export const sightings = new SightingsStore();
 
 // Auto-initialize
 if (isClient()) {
