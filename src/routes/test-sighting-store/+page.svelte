@@ -18,8 +18,24 @@
 </svelte:head>
 
 <center>
-    <br />
     <button onclick={createSighting}>Create Sighting</button>
-    <br />
+    <button onclick={sightings.syncPendingAndReload}>Sync Pending Changes</button>
     <button onclick={() => console.log(sightings.getAllSightings())}>List Sightings</button>
 </center>
+
+<style>
+    center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 80vh;
+        gap: 1rem;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        margin: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+</style>
