@@ -41,8 +41,8 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
-		"bcrypt": "^6.0.0",
 		"@tailwindcss/vite": "^4.2.1",
+		"bcrypt": "^6.0.0",
 		"dotenv": "^17.3.1",
 		"drizzle-orm": "^0.45.1",
 		"pg": "^8.20.0",

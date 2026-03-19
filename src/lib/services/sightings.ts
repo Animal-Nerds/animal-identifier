@@ -1,0 +1,1 @@
+export { sightingsServiceTest as sightingsService } from '../stores/sightings.test';
