@@ -17,85 +17,79 @@ export interface SightingsStoreState {
 	error: string | null;
 	initialized: boolean;
 }
-if (typeof localStorage === 'undefined') {
-    // Mock localStorage for server-side rendering
-    globalThis.localStorage = (() => {
-        let store = {} as Record<string, string>;
-        return {
-            getItem: (key:string) => store[key] || null, // Returns null for undefined keys, like real localStorage
-            setItem: (key: string, value: string) => { store[key] = value.toString(); },
-            removeItem: (key: string) => { delete store[key]; },
-            clear: () => { store = {}; },
-            key: (index: number) => Object.keys(store)[index] || null,
-            get length() { return Object.keys(store).length; }
-        };
-    })();
-}
 
 // ─── Internal Utilities ──────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'sightings_cache';
 const PENDING_DELETES_KEY = 'sightings_pending_deletes';
 
-function persistToLocalStorage(sightings: Sighting[]): void {
-	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(sightings));
-	} catch (err) {
-		console.warn('Failed to persist sightings:', err);
-	}
-}
-
-function loadFromLocalStorage(): Sighting[] {
-	try {
-		const cached = localStorage.getItem(STORAGE_KEY);
-		return cached ? JSON.parse(cached) : [];
-	} catch (err) {
-		console.warn('Failed to load sightings from localStorage:', err);
-		return [];
-	}
-}
-
-function persistPendingDeletes(ids: string[]): void {
-	try {
-		localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(ids));
-	} catch (err) {
-		console.warn('Failed to persist pending deletes:', err);
-	}
-}
-
-function loadPendingDeletes(): string[] {
-	try {
-		const cached = localStorage.getItem(PENDING_DELETES_KEY);
-		return cached ? JSON.parse(cached) : [];
-	} catch (err) {
-		console.warn('Failed to load pending deletes from localStorage:', err);
-		return [];
-	}
-}
-
-function findSightingIndex(sightings: Sighting[], id: string): number {
-	return sightings.findIndex((s) => s.id === id);
-}
-
 // ─── Create Store ────────────────────────────────────────────────────────────
 
 class SightingsStore implements Readable<SightingsStoreState> {
+    persistToLocalStorage(sightings: Sighting[]): void {
+        if (!this.localStorage) return;
+        try {
+            this.localStorage.setItem(STORAGE_KEY, JSON.stringify(sightings));
+        } catch (err) {
+            console.warn('Failed to persist sightings:', err);
+        }
+    }
+    loadFromLocalStorage(): Sighting[] {
+        if (!this.localStorage) return [];
+        try {
+            const cached = this.localStorage.getItem(STORAGE_KEY);
+            return cached ? JSON.parse(cached) : [];
+        } catch (err) {
+            console.warn('Failed to load sightings from localStorage:', err);
+            return [];
+        }
+    }
+    persistPendingDeletes(ids: string[]): void {
+        if (!this.localStorage) return;
+        try {
+            this.localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(ids));
+        } catch (err) {
+            console.warn('Failed to persist pending deletes:', err);
+        }
+    }
+    loadPendingDeletes(): string[] {
+        if (!this.localStorage) return [];
+        try {
+            const cached = this.localStorage.getItem(PENDING_DELETES_KEY);
+            return cached ? JSON.parse(cached) : [];
+        } catch (err) {
+            console.warn('Failed to load pending deletes from localStorage:', err);
+            return [];
+        }
+    }
+    findSightingIndex(sightings: Sighting[], id: string): number {
+        return sightings.findIndex((s) => s.id === id);
+    }
+
+
+
+
 	private readonly handleOnline = () => {
 		this.syncPendingAndReload().catch((err) => {
 			console.error('Online sync failed:', err);
 		});
 	};
     private sightingsService: typeof sightingsService;
+    private localStorage: Storage | null;
 
 	private readonly store = writable<SightingsStoreState>({
-		sightings: loadFromLocalStorage(),
+		sightings: this.loadFromLocalStorage(),
 		loading: false,
 		error: null,
 		initialized: false
 	});
 
-	constructor(thisSightingsService: typeof sightingsService = sightingsService) {
+	constructor(
+        thisSightingsService: typeof sightingsService = sightingsService,
+        thisLocalStorage: Storage | null = null
+    ) {
 		this.sightingsService = thisSightingsService;
+        this.localStorage = thisLocalStorage;
         if (typeof window !== 'undefined') {
             window.addEventListener('online', this.handleOnline);
         }
@@ -108,19 +102,19 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	}
 
 	private persistCurrentSightings(): void {
-		persistToLocalStorage(get(this.store).sightings);
+		this.persistToLocalStorage(get(this.store).sightings);
 	}
 
 	private enqueuePendingDelete(id: string): void {
-		const pending = loadPendingDeletes();
+		const pending = this.loadPendingDeletes();
 		if (!pending.includes(id)) {
-			persistPendingDeletes([...pending, id]);
+			this.persistPendingDeletes([...pending, id]);
 		}
 	}
 
 	private dequeuePendingDelete(id: string): void {
-		const pending = loadPendingDeletes();
-		persistPendingDeletes(pending.filter((value) => value !== id));
+		const pending = this.loadPendingDeletes();
+		this.persistPendingDeletes(pending.filter((value) => value !== id));
 	}
 
 	private toCreatePayload(sighting: Sighting): Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'> {
@@ -155,7 +149,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 				if (sighting.id.startsWith('temp_')) {
 					const created = await this.sightingsService.createSighting(this.toCreatePayload(sighting));
 					this.store.update((s) => {
-						const idx = findSightingIndex(s.sightings, sighting.id);
+						const idx = this.findSightingIndex(s.sightings, sighting.id);
 						if (idx > -1) {
 							s.sightings[idx] = { ...created, syncStatus: 'SYNCED' as SyncStatus };
 						}
@@ -167,7 +161,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 						this.toUpdatePayload(sighting)
 					);
 					this.store.update((s) => {
-						const idx = findSightingIndex(s.sightings, sighting.id);
+						const idx = this.findSightingIndex(s.sightings, sighting.id);
 						if (idx > -1) {
 							s.sightings[idx] = {
 								...s.sightings[idx],
@@ -181,7 +175,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 			} catch (err) {
 				syncError = err instanceof Error ? err.message : 'Failed to sync pending sightings';
 				this.store.update((s) => {
-					const idx = findSightingIndex(s.sightings, sighting.id);
+					const idx = this.findSightingIndex(s.sightings, sighting.id);
 					if (idx > -1) {
 						s.sightings[idx] = { ...s.sightings[idx], syncStatus: 'FAILED' as SyncStatus };
 					}
@@ -193,7 +187,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 			current = get(this.store);
 		}
 
-		const pendingDeletes = loadPendingDeletes();
+		const pendingDeletes = this.loadPendingDeletes();
 		for (const id of pendingDeletes) {
 			try {
 				await this.sightingsService.deleteSighting(id);
@@ -211,7 +205,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 			const merged = [...serverSightings.map((item) => ({ ...item, syncStatus: 'SYNCED' as SyncStatus }))];
 			for (const localSighting of localUnsynced) {
-				const idx = findSightingIndex(merged, localSighting.id);
+				const idx = this.findSightingIndex(merged, localSighting.id);
 				if (idx > -1) {
 					merged[idx] = localSighting;
 				} else {
@@ -260,7 +254,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 				syncStatus: 'PENDING' as SyncStatus
 			};
 			const newList = [...s.sightings, sighting];
-			persistToLocalStorage(newList);
+			this.persistToLocalStorage(newList);
 			return { ...s, sightings: newList, error: null };
 		});
 
@@ -268,21 +262,21 @@ class SightingsStore implements Readable<SightingsStoreState> {
 			this.store.update((s) => ({ ...s, loading: true }));
 			const created = await this.sightingsService.createSighting(data);
 			this.store.update((s) => {
-				const idx = findSightingIndex(s.sightings, tempId);
+				const idx = this.findSightingIndex(s.sightings, tempId);
 				if (idx > -1) {
 					s.sightings[idx] = { ...created, syncStatus: 'SYNCED' as SyncStatus };
 				}
-				persistToLocalStorage(s.sightings);
+				this.persistToLocalStorage(s.sightings);
 				return s;
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to add';
 			this.store.update((s) => {
-				const idx = findSightingIndex(s.sightings, tempId);
+				const idx = this.findSightingIndex(s.sightings, tempId);
 				if (idx > -1) {
 					s.sightings[idx] = { ...s.sightings[idx], syncStatus: 'FAILED' as SyncStatus };
 				}
-				persistToLocalStorage(s.sightings);
+				this.persistToLocalStorage(s.sightings);
 				return { ...s, error: msg };
 			});
 		} finally {
@@ -292,7 +286,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 	async update(id: string, data: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId'>>): Promise<void> {
 		this.store.update((s) => {
-			const idx = findSightingIndex(s.sightings, id);
+			const idx = this.findSightingIndex(s.sightings, id);
 			if (idx > -1) {
 				s.sightings[idx] = {
 					...s.sightings[idx],
@@ -301,7 +295,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 					updatedAt: new Date().toISOString()
 				};
 			}
-			persistToLocalStorage(s.sightings);
+			this.persistToLocalStorage(s.sightings);
 			return { ...s, error: null };
 		});
 
@@ -309,21 +303,21 @@ class SightingsStore implements Readable<SightingsStoreState> {
 			this.store.update((s) => ({ ...s, loading: true }));
 			const result = await this.sightingsService.updateSighting(id, data);
 			this.store.update((s) => {
-				const idx = findSightingIndex(s.sightings, id);
+				const idx = this.findSightingIndex(s.sightings, id);
 				if (idx > -1) {
 					s.sightings[idx] = { ...result, syncStatus: 'SYNCED' as SyncStatus };
 				}
-				persistToLocalStorage(s.sightings);
+				this.persistToLocalStorage(s.sightings);
 				return s;
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to update';
 			this.store.update((s) => {
-				const idx = findSightingIndex(s.sightings, id);
+				const idx = this.findSightingIndex(s.sightings, id);
 				if (idx > -1) {
 					s.sightings[idx] = { ...s.sightings[idx], syncStatus: 'FAILED' as SyncStatus };
 				}
-				persistToLocalStorage(s.sightings);
+				this.persistToLocalStorage(s.sightings);
 				return { ...s, error: msg };
 			});
 		} finally {
@@ -333,11 +327,11 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 	async remove(id: string): Promise<void> {
 		this.store.update((s) => {
-			const idx = findSightingIndex(s.sightings, id);
+			const idx = this.findSightingIndex(s.sightings, id);
 			if (idx > -1) {
 				s.sightings.splice(idx, 1);
 			}
-			persistToLocalStorage(s.sightings);
+			this.persistToLocalStorage(s.sightings);
 			return { ...s, error: null };
 		});
 
@@ -353,7 +347,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 				this.dequeuePendingDelete(id);
 			}
 			this.store.update((s) => {
-				persistToLocalStorage(s.sightings);
+				this.persistToLocalStorage(s.sightings);
 				return s;
 			});
 		} catch (err) {
@@ -368,8 +362,3 @@ class SightingsStore implements Readable<SightingsStoreState> {
 export const sightings = new SightingsStore();
 
 export const SightingsStoreClass = SightingsStore;
-
-// Auto-initialize
-sightings.init().catch((err) => {
-    console.error('Store init failed:', err);
-});

@@ -67,6 +67,18 @@ class sightingsServiceClass {
 };
 export const sightingsServiceTest = new sightingsServiceClass();
 
+const localStorageMock = (() => {
+    let store = {} as Record<string, string>;
+    return {
+        getItem: (key:string) => store[key] || null, // Returns null for undefined keys, like real localStorage
+        setItem: (key: string, value: string) => { store[key] = value.toString(); },
+        removeItem: (key: string) => { delete store[key]; },
+        clear: () => { store = {}; },
+        key: (index: number) => Object.keys(store)[index] || null,
+        get length() { return Object.keys(store).length; }
+    };
+})();
+
 import { describe, it, expect } from 'vitest'
 import { SightingsStoreClass } from './sightings';
 import type { sightingsService } from '$lib/services/sightings';
@@ -78,7 +90,8 @@ type MockSightingsService = typeof sightingsService & {
 describe('sightings store', async () => {
     it('should have 0 sightings when offline', async () => {
         let service = new sightingsServiceClass() as MockSightingsService;
-        const sightings = new SightingsStoreClass(service);
+        let ls = {...localStorageMock};
+        const sightings = new SightingsStoreClass(service, ls);
         service.setOffline(true);
         await sightings.init()
         const state = sightings.getAllSightings()
@@ -87,10 +100,23 @@ describe('sightings store', async () => {
     
     it('should have 1 sighting when online', async () => {
         let service = new sightingsServiceClass() as MockSightingsService;
-        const sightings = new SightingsStoreClass(service);
+        let ls = {...localStorageMock};
+        const sightings = new SightingsStoreClass(service, ls);
         service.setOffline(false);
         await sightings.init()
         const state = sightings.getAllSightings()
         expect(state.length).toBe(1)
+    });
+    
+    it('starting offline with 0, then online should be 1', async () => {
+        let service = new sightingsServiceClass() as MockSightingsService;
+        let ls = {...localStorageMock};
+        const sightings = new SightingsStoreClass(service, ls);
+        service.setOffline(true);
+        await sightings.init()
+        expect(sightings.getAllSightings().length).toBe(0)
+        service.setOffline(false);
+        await sightings.syncPendingAndReload()
+        expect(sightings.getAllSightings().length).toBe(1)
     });
 })
