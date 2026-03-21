@@ -1,18 +1,10 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
 import { sessions } from '$lib/db/schema';
 import { eq } from 'drizzle-orm';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
-
-const db = drizzle(pool);
+import { db } from '$lib/db/client';
 
 const SALT_ROUNDS = 12;
-
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);

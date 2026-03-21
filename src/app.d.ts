@@ -48,6 +48,10 @@ declare global {
 	namespace App {
 		interface Locals {
 			token?: string;
+			user?: {
+				id: string;
+				email: string;
+			};
 		}
 	}
 
