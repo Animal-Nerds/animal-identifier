@@ -1,3 +1,4 @@
+import { IMAGE } from "./constants";
 export async function compressImage(file: File): Promise<string> {
     // Validate the file type against supported formats
     const validMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -19,7 +20,7 @@ export async function compressImage(file: File): Promise<string> {
     });
 
     // Calculate new dimensions while maintaining aspect ratio
-    const MAX_DIMENSION = 1200;
+    const MAX_DIMENSION = IMAGE.MAX_DIMENSION;
     let newWidth = img.width;
     let newHeight = img.height;
 

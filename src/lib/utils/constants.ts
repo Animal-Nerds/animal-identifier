@@ -48,7 +48,7 @@ export const VALIDATION = {
 
 export const IMAGE = {
   MAX_SIZE_BYTES: 500 * 1024,
-  MAX_DIMENSION:1200,
+  MAX_DIMENSION: 800,
   SUPPORTED_FORMATS: ['jpeg', 'png', 'webp'],
   Suppressed_MIME_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
   MIN_QUALITY: 0.3,
