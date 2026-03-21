@@ -48,7 +48,11 @@ export const VALIDATION = {
 
 export const IMAGE = {
   MAX_SIZE_BYTES: 500 * 1024,
-  SUPPORTED_FORMATS: ['jpeg', 'png']
+  MAX_DIMENSION: 800,
+  SUPPORTED_FORMATS: ['jpeg', 'png', 'webp'],
+  Suppressed_MIME_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
+  MIN_QUALITY: 0.3,
+  INITIAL_QUALITY: 0.8,
 } as const;
 
 export const PAGINATION = {
