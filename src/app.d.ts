@@ -1,17 +1,16 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 
-export {};
+export { };
 
 declare global {
-
 	namespace App {
 		interface Locals {
-			user: import('$lib/db/schema').User | null;
+			user: import('$lib/db/schema').UserProfile | null;
 		}
 
 		interface PageData {
-			user: import('$lib/db/schema').User | null;
+			user: import('$lib/db/schema').UserProfile | null;
 		}
 	}
 
@@ -56,12 +55,18 @@ declare global {
 		syncStatus: SyncStatus;
 	}
 
+	namespace App {
+		interface Locals {
+			token?: string;
+		}
+	}
+
 	enum SyncStatus {
-		PENDING = "PENDING",
-		SYNCING = "SYNCING",
-		SYNCED = "SYNCED",
-		FAILED = "FAILED",
-		OFFLINE = "OFFLINE"
+		PENDING = 'PENDING',
+		SYNCING = 'SYNCING',
+		SYNCED = 'SYNCED',
+		FAILED = 'FAILED',
+		OFFLINE = 'OFFLINE'
 	}
 
 	interface ValidationResult {

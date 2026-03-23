@@ -2,31 +2,39 @@ import type { Handle } from '@sveltejs/kit';
 import { and, eq, gt } from 'drizzle-orm';
 import { db } from '$lib/server/db/client';
 import { sessions, users } from '$lib/db/schema';
-
-const SESSION_COOKIE_NAME = 'session';
+import { SESSION } from '$lib/utils/constants';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const token = event.cookies.get(SESSION_COOKIE_NAME);
+	// Default for every request (no redirects here).
+	event.locals.user = null;
+	event.locals.token = undefined;
 
+	const token = event.cookies.get(SESSION.COOKIE_NAME);
 	if (!token) {
-		event.locals.user = null;
 		return resolve(event);
 	}
 
 	try {
 		const now = new Date();
 		const rows = await db
-			.select({ user: users })
+			.select({
+				id: users.id,
+				email: users.email
+			})
 			.from(sessions)
 			.innerJoin(users, eq(sessions.userId, users.id))
 			.where(and(eq(sessions.token, token), gt(sessions.expiresAt, now)))
 			.limit(1);
 
-		event.locals.user = rows[0]?.user ?? null;
+		if (rows.length > 0) {
+			event.locals.user = rows[0];
+			event.locals.token = token;
+		}
 	} catch {
+		// Invalid DB/session state should never crash request handling.
 		event.locals.user = null;
+		event.locals.token = undefined;
 	}
 
 	return resolve(event);
 };
-
