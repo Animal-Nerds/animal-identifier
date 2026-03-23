@@ -48,6 +48,7 @@ declare global {
 	namespace App {
 		interface Locals {
 			token?: string;
+			user?: import('$lib/db/schema').UserProfile | null;
 		}
 	}
 

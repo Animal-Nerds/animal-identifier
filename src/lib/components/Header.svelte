@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth';
+	import { goto } from '$app/navigation';
 
 	let isOpen = $state(false);
 </script>
@@ -26,8 +27,8 @@
                     <button
                         class="logout-btn"
                         onclick={() => {
-                            auth.logout();
                             isOpen = false;
+							goto('/signout');
                         }}
                     >
                         Logout

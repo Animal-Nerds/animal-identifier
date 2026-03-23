@@ -28,6 +28,21 @@ function createAuthStore() {
 
 	return {
 		subscribe,
+		restore: (user: import('$lib/db/schema').UserProfile | null) => {
+			// Keep client-only storage behavior for existing mock flows.
+			if (typeof window !== 'undefined') {
+				if (user) {
+					localStorage.setItem(STORAGE_KEY, 'server_session_' + user.id);
+				} else {
+					localStorage.removeItem(STORAGE_KEY);
+				}
+			}
+
+			set({
+				isAuthenticated: !!user,
+				userEmail: user?.email ?? null
+			});
+		},
 		login: (email: string) => {
 			const token = 'mock_token_' + Date.now();
 			localStorage.setItem(STORAGE_KEY, token);
