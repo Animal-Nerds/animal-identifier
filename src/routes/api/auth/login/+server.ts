@@ -17,9 +17,9 @@ export const POST = async (event) => {
 
 	try {
 		const raw = await request.text();
-		const body = JSON.parse(raw) as unknown;
-		email = body?.email;
-		password = body?.password;
+		const body = JSON.parse(raw) as { email?: unknown; password?: unknown };
+		email = body.email;
+		password = body.password;
 	} catch {
 		return json({ errors: ['Invalid JSON body'] }, { status: 400 });
 	}

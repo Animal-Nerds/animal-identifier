@@ -35,7 +35,7 @@
 </svelte:head>
 
 <div class="app-container">
-	<Header />
+	<Header user={data.user} />
 	<main class="app-main">
 		{@render children()}
 	</main>

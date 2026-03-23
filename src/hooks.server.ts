@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { and, eq, gt } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { db } from '$lib/server/db/client';
 import { sessions, users } from '$lib/db/schema';
 import { SESSION } from '$lib/utils/constants';
 
