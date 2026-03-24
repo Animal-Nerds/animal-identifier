@@ -94,3 +94,11 @@ export async function deleteSighting(id: string) {
   };
   await apiFetch(baseUrl, options);
 }
+
+export const sightingsService = {
+  getSightings,
+  getSightingById,
+  createSighting,
+  updateSighting,
+  deleteSighting
+};
