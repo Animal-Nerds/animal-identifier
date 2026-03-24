@@ -4,6 +4,16 @@
 export { };
 
 declare global {
+	namespace App {
+		interface Locals {
+			user: import('$lib/db/schema').UserProfile | null;
+		}
+
+		interface PageData {
+			user: import('$lib/db/schema').UserProfile | null;
+		}
+	}
+
 	interface User {
 		id: string;
 		email: string;

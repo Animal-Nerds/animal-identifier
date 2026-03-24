@@ -1,26 +1,8 @@
 <script lang="ts">
 	import '../app.css';
-	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
-	import { auth } from '$lib/stores/auth';
 
-	let { children } = $props();
-
-	const PUBLIC_ROUTES = ['/', '/login', '/signup'];
-
-	// Check if current route requires authentication
-	function isProtectedRoute(pathname: string): boolean {
-		return !PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
-	}
-
-	// Redirect effect: if trying to access protected route while not authenticated
-	$effect(() => {
-		if (browser && isProtectedRoute($page.url.pathname) && !$auth.isAuthenticated) {
-			goto('/login');
-		}
-	});
+	let { data, children } = $props();
 </script>
 
 <svelte:head>
@@ -28,7 +10,7 @@
 </svelte:head>
 
 <div class="app-container">
-	<Header />
+	<Header user={data.user} />
 	<main class="app-main">
 		{@render children()}
 	</main>
