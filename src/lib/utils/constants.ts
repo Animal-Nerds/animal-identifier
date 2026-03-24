@@ -62,5 +62,5 @@ export const PAGINATION = {
 } as const;
 export const SESSION = {
   DURATION_DAYS: 30,
-  COOKIE_NAME: 'session_token'
+  COOKIE_NAME: 'auth_token'
 } as const;
