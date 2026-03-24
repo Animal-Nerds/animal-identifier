@@ -182,10 +182,11 @@ Create a new sighting (without image). Image is managed separately via POST /sig
 **Request**:
 ```json
 {
-  "animal_name": "Red Fox",
-  "location": "Central Park, NYC",
-  "latitude": 40.785091,
-  "longitude": -73.968285
+  "species": "Red Fox",
+  "description": "Near the campsite",
+  "latitude": 45.12,
+  "longitude": -122.11,
+  "seen_at": "2026-03-21T12:34:56.000Z"
 }
 ```
 
