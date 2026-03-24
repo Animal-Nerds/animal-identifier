@@ -1,35 +1,40 @@
 import type { Handle } from '@sveltejs/kit';
 import { and, eq, gt } from 'drizzle-orm';
-import { db } from '$lib/db/client';
+import { db } from '$lib/server/db/client';
 import { sessions, users } from '$lib/db/schema';
+import { SESSION } from '$lib/utils/constants';
 
 export const handle: Handle = async ({ event, resolve }) => {
-    const token = event.cookies.get('auth_token');
+	// Default for every request (no redirects here).
+	event.locals.user = null;
+	event.locals.token = undefined;
 
-    event.locals.token = undefined;
-    event.locals.user = undefined;
+	const token = event.cookies.get(SESSION.COOKIE_NAME);
+	if (!token) {
+		return resolve(event);
+	}
 
-    if (token) {
-        const [row] = await db
-            .select({
-                token: sessions.token,
-                userId: users.id,
-                emial: users.email,
-            })
-            .from(sessions)
-            .innerJoin(users, eq(users.id, sessions.userId))
-            .where(and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())))
-            .limit(1);
-            
-        if (row) {
-            event.locals.token = row.token;
-            event.locals.user = {
-                id: row.userId,
-                email: row.emial,
-            };
-        } else {
-            event.cookies.delete('auth_token', {path: '/'});
-        }
-    }
-    return resolve(event);
+	try {
+		const now = new Date();
+		const rows = await db
+			.select({
+				id: users.id,
+				email: users.email
+			})
+			.from(sessions)
+			.innerJoin(users, eq(sessions.userId, users.id))
+			.where(and(eq(sessions.token, token), gt(sessions.expiresAt, now)))
+			.limit(1);
+
+		if (rows.length > 0) {
+			event.locals.user = rows[0];
+			event.locals.token = token;
+		}
+	} catch {
+		// Invalid DB/session state should never crash request handling.
+		event.locals.user = null;
+		event.locals.token = undefined;
+	}
+
+	return resolve(event);
 };
