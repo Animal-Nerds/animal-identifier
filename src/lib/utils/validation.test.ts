@@ -123,6 +123,7 @@ describe('validateUserObject', () => {
             id: '123e4567-e89b-12d3-a456-426614174000',
             email: 'test@example.com',
             name: 'John Doe',
+            passwordHash: 'some_password_hash',
             avatarUrl: null,
             createdAt: new Date(),
             updatedAt: new Date()

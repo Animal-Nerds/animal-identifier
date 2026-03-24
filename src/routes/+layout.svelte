@@ -1,8 +1,33 @@
 <script lang="ts">
 	import '../app.css';
+	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
+	import { auth } from '$lib/stores/auth';
 
 	let { data, children } = $props();
+
+	const PUBLIC_ROUTES = ['/', '/login', '/signup'];
+
+	// Check if current route requires authentication
+	function isProtectedRoute(pathname: string): boolean {
+		return !PUBLIC_ROUTES.some((route) => {
+			// '/' is a full match, otherwise every route would be public.
+			if (route === '/') return pathname === '/';
+			return pathname.startsWith(route);
+		});
+	}
+
+	// Redirect effect: if trying to access protected route while not authenticated
+	$effect(() => {
+		// Hydrate store from server-side session data (httpOnly cookie -> locals.user -> layout data.user).
+		auth.restore(data.user ?? null);
+
+		if (browser && isProtectedRoute($page.url.pathname) && !$auth.isAuthenticated) {
+			goto('/login');
+		}
+	});
 </script>
 
 <svelte:head>

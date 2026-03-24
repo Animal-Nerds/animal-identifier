@@ -70,14 +70,18 @@
 				body: JSON.stringify({ email, password })
 			});
 
-			const data = await res.json();
+			const data = await res.json().catch(() => ({}));
 
 			if (!res.ok) {
-				errors.server = data?.message || 'Signup failed';
+				if (Array.isArray(data?.errors) && data.errors.length > 0) {
+					errors.server = data.errors.join(', ');
+				} else {
+					errors.server = data?.error ?? 'Signup failed';
+				}
 				return;
 			}
 
-			goto('/dashboard');
+			goto('/login');
 		} catch (err: unknown) {
 			errors.server = 'Something went wrong. Please try again.';
 		} finally {
@@ -90,67 +94,177 @@
 	<title>Sign Up</title>
 </svelte:head>
 
-<div class="container">
-	<h1>Create an account</h1>
+<div class="auth-page">
+	<div class="welcome-card auth-card">
+		<h2>Create your account</h2>
+		<p class="sub-msg">Join to save and share your wildlife sightings.</p>
 
-	<form on:submit={handleSubmit} novalidate aria-describedby="form-error">
-		<div class="field">
-			<label for="email">Email</label>
-			<input
-				id="email"
-				type="email"
-				bind:value={email}
-				required
-				aria-invalid={!!errors.email}
-				aria-describedby="email-error"
-			/>
-			{#if errors.email}
-				<p id="email-error" class="error">{errors.email}</p>
+		<form on:submit={handleSubmit} novalidate aria-describedby="form-error">
+			<div class="field">
+				<label for="email">Email</label>
+				<input
+					id="email"
+					type="email"
+					bind:value={email}
+					required
+					aria-invalid={!!errors.email}
+					aria-describedby="email-error"
+				/>
+				{#if errors.email}
+					<p id="email-error" class="error">{errors.email}</p>
+				{/if}
+			</div>
+
+			<div class="field">
+				<label for="password">Password</label>
+				<input
+					id="password"
+					type="password"
+					bind:value={password}
+					required
+					minlength="8"
+					aria-invalid={!!errors.password}
+					aria-describedby="password-error"
+				/>
+				{#if errors.password}
+					<p id="password-error" class="error">{errors.password}</p>
+				{/if}
+			</div>
+
+			<div class="field">
+				<label for="confirmPassword">Confirm Password</label>
+				<input
+					id="confirmPassword"
+					type="password"
+					bind:value={confirmPassword}
+					required
+					aria-invalid={!!errors.confirmPassword}
+					aria-describedby="confirm-error"
+				/>
+				{#if errors.confirmPassword}
+					<p id="confirm-error" class="error">{errors.confirmPassword}</p>
+				{/if}
+			</div>
+
+			{#if errors.server}
+				<p id="form-error" class="error server">{errors.server}</p>
 			{/if}
-		</div>
 
-		<div class="field">
-			<label for="password">Password</label>
-			<input
-				id="password"
-				type="password"
-				bind:value={password}
-				required
-				minlength="8"
-				aria-invalid={!!errors.password}
-				aria-describedby="password-error"
-			/>
-			{#if errors.password}
-				<p id="password-error" class="error">{errors.password}</p>
-			{/if}
-		</div>
+			<button type="submit" class="btn btn-primary" disabled={loading} aria-busy={loading}>
+				{loading ? 'Creating account...' : 'Sign Up'}
+			</button>
+		</form>
 
-		<div class="field">
-			<label for="confirmPassword">Confirm Password</label>
-			<input
-				id="confirmPassword"
-				type="password"
-				bind:value={confirmPassword}
-				required
-				aria-invalid={!!errors.confirmPassword}
-				aria-describedby="confirm-error"
-			/>
-			{#if errors.confirmPassword}
-				<p id="confirm-error" class="error">{errors.confirmPassword}</p>
-			{/if}
-		</div>
-
-		{#if errors.server}
-			<p id="form-error" class="error server">{errors.server}</p>
-		{/if}
-
-		<button type="submit" disabled={loading} aria-busy={loading}>
-			{loading ? 'Creating account...' : 'Sign Up'}
-		</button>
-	</form>
-
-	<p class="login-link">
-		Already have an account?
-		<a href="/auth/login">Log in</a>
-	</p>
+		<p class="login-link">
+			Already have an account?
+			<a href="/login">Log in</a>
+		</p>
+	</div>
 </div>
+
+<style>
+	.auth-page {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-height: 100%;
+	}
+
+	.auth-card {
+		background: white;
+		border-radius: 1rem;
+		padding: 2rem 1.5rem;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		text-align: center;
+		max-width: 420px;
+		margin: 0 1rem;
+	}
+
+	h2 {
+		margin: 0 0 0.35rem;
+		font-size: 1.75rem;
+	}
+
+	.sub-msg {
+		color: #666;
+		font-size: 0.95rem;
+		margin: 0 0 1.25rem;
+	}
+
+	form {
+		text-align: left;
+		margin-top: 0.5rem;
+	}
+
+	.field {
+		margin-bottom: 1rem;
+	}
+
+	label {
+		display: block;
+		margin-bottom: 0.4rem;
+		font-weight: 600;
+	}
+
+	input {
+		width: 100%;
+		padding: 0.85rem 1rem;
+		border-radius: 0.5rem;
+		border: 1px solid rgba(0, 0, 0, 0.12);
+		background: #f9fafb;
+		box-sizing: border-box;
+	}
+
+	.error {
+		margin: 0.4rem 0 0;
+		color: #b42318;
+		font-size: 0.9rem;
+	}
+
+	.error.server {
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+
+	.btn {
+		display: block;
+		width: 100%;
+		padding: 0.9rem 1.5rem;
+		border-radius: 0.5rem;
+		text-decoration: none;
+		font-weight: 600;
+		transition: opacity 0.2s;
+		border: none;
+	}
+
+	.btn:active {
+		opacity: 0.8;
+	}
+
+	.btn-primary {
+		background: #2d5a2d;
+		color: white;
+	}
+
+	.btn:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.login-link {
+		margin-top: 1rem;
+		color: #555;
+		text-align: center;
+		font-size: 0.95rem;
+	}
+
+	.login-link a {
+		color: #2d5a2d;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.login-link a:hover {
+		text-decoration: underline;
+	}
+</style>

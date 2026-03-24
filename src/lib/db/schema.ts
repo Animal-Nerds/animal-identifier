@@ -7,6 +7,7 @@ export const users = pgTable('users', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	email: text('email').notNull().unique(),
 	name: text('name').notNull(),
+	passwordHash: text('password_hash').notNull(),
 	avatarUrl: text('avatar_url'),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
@@ -84,6 +85,9 @@ export const imagesRelations = relations(images, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+// Public profile used by auth middleware + API responses.
+export type UserProfile = Pick<User, 'id' | 'email'>;
 
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;

@@ -1,15 +1,8 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import { sessions } from '$lib/db/schema';
 import { eq } from 'drizzle-orm';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
-
-const db = drizzle(pool);
+import { sessions } from '$lib/db/schema';
+import { db } from './db';
 
 const SALT_ROUNDS = 12;
 
@@ -33,6 +26,7 @@ export async function createSession(userId: string): Promise<string> {
   const token = generateSessionToken();
 
   const expiresAt = new Date();
+  // Default session duration (can be overridden by callers if needed).
   expiresAt.setDate(expiresAt.getDate() + 7);
 
   await db.insert(sessions).values({

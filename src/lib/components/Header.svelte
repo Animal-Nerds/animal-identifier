@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { User } from '$lib/db/schema';
+	import type { UserProfile } from '$lib/db/schema';
+	import { goto } from '$app/navigation';
 
 	let isOpen = $state(false);
-	let { user = null } = $props<{ user?: User | null }>();
+	let { user = null } = $props<{ user?: UserProfile | null }>();
 </script>
 
 <header class="app-header">
@@ -24,6 +25,15 @@
                         <li><a href="/">Home</a></li>
                         <li><a href="/sightings">Sightings</a></li>
                     </ul>
+                    <button
+                        class="logout-btn"
+                        onclick={() => {
+                            isOpen = false;
+							goto('/signout');
+                        }}
+                    >
+                        Logout
+                    </button>
                 </nav>
             {/if}
         </div>
