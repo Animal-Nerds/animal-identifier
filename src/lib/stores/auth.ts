@@ -1,55 +1,61 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
-export interface AuthState {
+const STORAGE_KEY = 'auth';
+
+interface AuthState {
 	isAuthenticated: boolean;
 	userEmail: string | null;
+	user: User | null;
+}
+
+const defaultState: AuthState = {
+	isAuthenticated: false,
+	userEmail: null,
+	user: null
+};
+
+function loadFromStorage(): AuthState {
+	if (!browser) return defaultState;
+	try {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (stored) return JSON.parse(stored);
+	} catch {
+		// ignore corrupt data
+	}
+	return defaultState;
 }
 
 function createAuthStore() {
-	const STORAGE_KEY = 'auth_token';
+	const { subscribe, set } = writable<AuthState>(loadFromStorage());
 
-	// Initialize from localStorage if available
-	let initialState: AuthState = {
-		isAuthenticated: false,
-		userEmail: null
-	};
-
-	if (typeof window !== 'undefined') {
-		const token = localStorage.getItem(STORAGE_KEY);
-		if (token) {
-			initialState = {
-				isAuthenticated: true,
-				userEmail: 'user@example.com' // Mock email for now
-			};
-		}
+	if (browser) {
+		subscribe((state) => {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		});
 	}
-
-	const { subscribe, set, update } = writable<AuthState>(initialState);
 
 	return {
 		subscribe,
-		login: (email: string) => {
-			const token = 'mock_token_' + Date.now();
-			localStorage.setItem(STORAGE_KEY, token);
-			document.cookie = `${STORAGE_KEY}=${token}; path=/;`;
+		login(input: string | User) {
+			const user = typeof input === 'string' ? null : input;
+			const email = typeof input === 'string' ? input : input.email;
 			set({
 				isAuthenticated: true,
-				userEmail: email
+				userEmail: email,
+				user
 			});
 		},
-		logout: () => {
-			localStorage.removeItem(STORAGE_KEY);
-			document.cookie = `${STORAGE_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+		logout() {
+			set(defaultState);
+			if (browser) localStorage.removeItem(STORAGE_KEY);
+		},
+		hydrate(user: User) {
 			set({
-				isAuthenticated: false,
-				userEmail: null
+				isAuthenticated: true,
+				userEmail: user.email,
+				user
 			});
-		},
-		isLoggedIn: (): boolean => {
-			if (typeof window !== 'undefined') {
-				return !!localStorage.getItem(STORAGE_KEY);
-			}
-			return false;
 		}
 	};
 }
