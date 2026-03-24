@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { validateEmail, validatePassword } from '$lib/utils/validation';
+	import { BASE_PATH, API_ROUTES, VALIDATION } from '$lib/utils/constants';
+	import { auth } from '$lib/stores/auth';
 
 	let email = $state('');
 	let password = $state('');
@@ -14,10 +17,6 @@
 
 	let loading = $state(false);
 
-	const isValidEmail = (value: string): boolean => {
-		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-	};
-
 	const validate = () => {
 		errors.email = '';
 		errors.password = '';
@@ -29,17 +28,23 @@
 		if (!email) {
 			errors.email = 'Email is required';
 			valid = false;
-		} else if (!isValidEmail(email)) {
-			errors.email = 'Enter a valid email address';
-			valid = false;
+		} else {
+			const emailResult = validateEmail(email);
+			if (!emailResult.valid) {
+				errors.email = emailResult.errors.join(', ');
+				valid = false;
+			}
 		}
 
 		if (!password) {
 			errors.password = 'Password is required';
 			valid = false;
-		} else if (password.length < 8) {
-			errors.password = 'Password must be at least 8 characters';
-			valid = false;
+		} else {
+			const passwordResult = validatePassword(password);
+			if (!passwordResult.valid) {
+				errors.password = `Password must be at least ${VALIDATION.PASSWORD.MIN_LENGTH} characters with uppercase, lowercase, digit, and special character`;
+				valid = false;
+			}
 		}
 
 		if (!confirmPassword) {
@@ -62,12 +67,13 @@
 		errors.server = '';
 
 		try {
-			const res = await fetch('/api/auth/signup', {
+			const res = await fetch(BASE_PATH + API_ROUTES.AUTH.SIGNUP, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({ email, password })
+				body: JSON.stringify({ email, password }),
+				credentials: 'include'
 			});
 
 			const data = await res.json().catch(() => ({}));
@@ -81,8 +87,15 @@
 				return;
 			}
 
-			goto('/login');
-		} catch (err: unknown) {
+			auth.hydrate({
+				id: data.user.id,
+				email: data.user.email,
+				username: data.user.email.split('@')[0] || 'user',
+				createdAt: new Date().toISOString()
+			});
+			await invalidateAll();
+			goto('/dashboard');
+		} catch {
 			errors.server = 'Something went wrong. Please try again.';
 		} finally {
 			loading = false;

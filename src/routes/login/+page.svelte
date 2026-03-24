@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { validateEmail } from '$lib/utils/validation';
+	import { BASE_PATH, API_ROUTES, VALIDATION } from '$lib/utils/constants';
+	import { auth } from '$lib/stores/auth';
 
 	let email = $state('');
 	let password = $state('');
@@ -12,10 +15,6 @@
 
 	let loading = $state(false);
 
-	const isValidEmail = (value: string): boolean => {
-		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-	};
-
 	const validate = () => {
 		errors.email = '';
 		errors.password = '';
@@ -26,16 +25,19 @@
 		if (!email) {
 			errors.email = 'Email is required';
 			valid = false;
-		} else if (!isValidEmail(email)) {
-			errors.email = 'Enter a valid email address';
-			valid = false;
+		} else {
+			const emailResult = validateEmail(email);
+			if (!emailResult.valid) {
+				errors.email = emailResult.errors.join(', ');
+				valid = false;
+			}
 		}
 
 		if (!password) {
 			errors.password = 'Password is required';
 			valid = false;
-		} else if (password.length < 8) {
-			errors.password = 'Password must be at least 8 characters';
+		} else if (password.length < VALIDATION.PASSWORD.MIN_LENGTH) {
+			errors.password = `Password must be at least ${VALIDATION.PASSWORD.MIN_LENGTH} characters`;
 			valid = false;
 		}
 
@@ -51,7 +53,7 @@
 		errors.server = '';
 
 		try {
-			const res = await fetch('/api/auth/login', {
+			const res = await fetch(BASE_PATH + API_ROUTES.AUTH.LOGIN, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password }),
@@ -61,7 +63,6 @@
 			const data = await res.json().catch(() => ({}));
 
 			if (!res.ok) {
-				// API returns either { errors: [...] } or { error: '...' }
 				if (Array.isArray(data?.errors) && data.errors.length > 0) {
 					errors.server = data.errors.join(', ');
 				} else {
@@ -70,6 +71,13 @@
 				return;
 			}
 
+			auth.hydrate({
+				id: data.user.id,
+				email: data.user.email,
+				username: data.user.email.split('@')[0] || 'user',
+				createdAt: new Date().toISOString()
+			});
+			await invalidateAll();
 			goto('/dashboard');
 		} catch {
 			errors.server = 'Something went wrong. Please try again.';

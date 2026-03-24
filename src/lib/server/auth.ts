@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { sessions } from '$lib/db/schema';
 import { db } from './db';
+import { SESSION } from '$lib/utils/constants';
 
 const SALT_ROUNDS = 12;
 
@@ -25,8 +26,7 @@ export async function createSession(userId: string): Promise<string> {
   const token = generateSessionToken();
 
   const expiresAt = new Date();
-  // Default session duration (can be overridden by callers if needed).
-  expiresAt.setDate(expiresAt.getDate() + 7);
+  expiresAt.setDate(expiresAt.getDate() + SESSION.DURATION_DAYS);
 
   await db.insert(sessions).values({
     token,
