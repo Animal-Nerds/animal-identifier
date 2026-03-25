@@ -1,15 +1,27 @@
 <script>
     import { sightings } from '$lib/stores/sightings';
 
-    function createSighting() {
-        sightings.add({
-            userId: '123e4567-e89b-12d3-a456-426614174000',
-            species: 'Bald Eagle',
-            description: 'Spotted near the river',
-            latitude: 45.123456,
-            longitude: -122.123456,
-            images: []
-        });
+    async function createSighting() {
+        try {
+            await sightings.add({
+                userId: '123e4567-e89b-12d3-a456-426614174000',
+                species: 'Bald Eagle',
+                description: 'Spotted near the river',
+                latitude: 45.123456,
+                longitude: -122.123456,
+                images: []
+            });
+        } catch (error) {
+            console.error('Failed to create sighting:', error);
+        }
+    }
+
+    async function syncSightings() {
+        try {
+            await sightings.syncPendingAndReload();
+        } catch (error) {
+            console.error('Failed to sync sightings:', error);
+        }
     }
 </script>
 
@@ -19,7 +31,7 @@
 
 <center>
     <button onclick={createSighting}>Create Sighting</button>
-    <button onclick={sightings.syncPendingAndReload}>Sync Pending Changes</button>
+    <button onclick={syncSightings}>Sync Pending Changes</button>
     <button onclick={() => console.log(sightings.getAllSightings())}>List Sightings</button>
 </center>
 
