@@ -1,7 +1,6 @@
 export interface IDBTableSchema {
     tableName: string;
     keyPath: string;
-    autoIncrement?: boolean;
 }
 export interface IDBOutput {
     records: object[];
@@ -10,18 +9,26 @@ export interface IDBOutput {
 
 
 export class IDB {
+    private indexedDB: IDBFactory;
     private dbName: string;
     private db: IDBDatabase | null;
     private schema: IDBTableSchema[];
+    private version: number;
 
-    constructor(dbName: string, schema: IDBTableSchema[]) {
+    constructor(indexedDB: IDBFactory, dbName: string, version: number, schema: IDBTableSchema[]) {
+        this.indexedDB = indexedDB;
         this.dbName = dbName;
         this.schema = schema;
+        this.version = version;
         this.db = null;
     }
     async open() {
         return new Promise<void>((resolve, reject) => {
-            const request = indexedDB.open(this.dbName);
+            const request = this.indexedDB.open(this.dbName, this.version);
+            request.onupgradeneeded = (event) => {
+                this.db = (event.target as IDBOpenDBRequest).result;
+                this.ensureSchema(this.db);
+            }
             request.onerror = (event) => {
                 reject((event.target as IDBOpenDBRequest).error);
             };
@@ -30,21 +37,15 @@ export class IDB {
                 this.db.onerror = (event) => {
                     reject((event.target as IDBRequest).error);
                 };
-                this.ensureSchema();
                 resolve();
             };
         });
     }
-    private ensureSchema() {
-        if (!this.db) throw new Error('Database not initialized');
-
+    private ensureSchema(db: IDBDatabase) {
         for (const tableSchema of this.schema) {
-            if (!this.db.objectStoreNames.contains(tableSchema.tableName)) {
-                this.db.createObjectStore(tableSchema.tableName, {
-                    keyPath: tableSchema.keyPath,
-                    autoIncrement: tableSchema.autoIncrement
-                });
-            }
+            db.createObjectStore(tableSchema.tableName, {
+                keyPath: tableSchema.keyPath
+            });
         }
     }
     async getAll(tableName: string) {
@@ -53,7 +54,7 @@ export class IDB {
         }
         if (!this.db) throw new Error('Database not initialized');
 
-        return new Promise<IDBOutput>((resolve, reject) => {
+        return new Promise<IDBOutput>(resolve => {
             const request = this.db!.transaction(tableName, 'readonly')
                 .objectStore(tableName)
                 .getAll();
@@ -68,7 +69,7 @@ export class IDB {
     async getByKey(tableName: string, id: string) {
         if (!this.db) throw new Error('Database not initialized');
 
-        return new Promise<IDBOutput>((resolve, reject) => {
+        return new Promise<IDBOutput>(resolve => {
             const request = this.db!.transaction(tableName, 'readonly')
                 .objectStore(tableName)
                 .get(id);
@@ -83,7 +84,7 @@ export class IDB {
     async add(tableName: string, data: object) {
         if (!this.db) throw new Error('Database not initialized');
 
-        return new Promise<IDBOutput>((resolve, reject) => {
+        return new Promise<IDBOutput>(resolve => {
             const request = this.db!.transaction(tableName, 'readwrite')
                 .objectStore(tableName)
                 .add(data);
@@ -98,14 +99,28 @@ export class IDB {
     async update(tableName: string, id: string, data: object) {
         if (!this.db) throw new Error('Database not initialized');
 
-        return new Promise<IDBOutput>((resolve, reject) => {
-            const request = this.db!.transaction(tableName, 'readwrite')
-                .objectStore(tableName)
-                .put(data, id);
-            request.onsuccess = () => {
-                resolve({ records: [data], error: null });
+        return new Promise<IDBOutput>(resolve => {
+
+            const request = this.db!.transaction(tableName, 'readwrite');
+            const store = request.objectStore(tableName);
+            const getRequest = store.get(id);
+
+            getRequest.onsuccess = (event) => {
+                const record = (event.target as IDBRequest).result;
+                if (!record) {
+                    resolve({ records: [], error: new Error(`Record with id '${id}' not found in table '${tableName}'`) });
+                    return;
+                }
+                const updatedRecord = { ...record, ...data };
+                const updateRequest = store.put(updatedRecord);
+                updateRequest.onsuccess = () => {
+                    resolve({ records: [updatedRecord], error: null });
+                };
+                updateRequest.onerror = (event) => {
+                    resolve({ records: [], error: (event.target as IDBRequest).error });
+                };
             };
-            request.onerror = (event) => {
+            getRequest.onerror = (event) => {
                 resolve({ records: [], error: (event.target as IDBRequest).error });
             };
         });
@@ -113,7 +128,7 @@ export class IDB {
     async delete(tableName: string, id: string) {
         if (!this.db) throw new Error('Database not initialized');
         
-        return new Promise<IDBOutput>((resolve, reject) => {
+        return new Promise<IDBOutput>(resolve => {
             const request = this.db!.transaction(tableName, 'readwrite')
                 .objectStore(tableName)
                 .delete(id);
