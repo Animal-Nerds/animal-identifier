@@ -55,89 +55,129 @@ export class IDB {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise<IDBOutput>(resolve => {
-            const request = this.db!.transaction(tableName, 'readonly')
-                .objectStore(tableName)
-                .getAll();
-            request.onsuccess = (event) => {
-                resolve({ records: (event.target as IDBRequest).result, error: null });
-            };
-            request.onerror = (event) => {
-                resolve({ records: [], error: (event.target as IDBRequest).error });
-            };
+            try {
+                const request = this.db!.transaction(tableName, 'readonly')
+                    .objectStore(tableName)
+                    .getAll();
+                request.onsuccess = (event) => {
+                    resolve({ records: (event.target as IDBRequest).result, error: null });
+                };
+                request.onerror = (event) => {
+                    resolve({ records: [], error: (event.target as IDBRequest).error });
+                };
+            } catch (error) {
+                if (error instanceof Error) {
+                    resolve({ records: [], error });
+                } else {
+                    resolve({ records: [], error: new Error('Unknown error') });
+                }
+            }
         });
     }
     async getByKey(tableName: string, id: string) {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise<IDBOutput>(resolve => {
-            const request = this.db!.transaction(tableName, 'readonly')
-                .objectStore(tableName)
-                .get(id);
-            request.onsuccess = (event) => {
-                resolve({ records: [(event.target as IDBRequest).result], error: null });
-            };
-            request.onerror = (event) => {
-                resolve({ records: [], error: (event.target as IDBRequest).error });
-            };
+            try {
+                const request = this.db!.transaction(tableName, 'readonly')
+                    .objectStore(tableName)
+                    .get(id);
+                request.onsuccess = (event) => {
+                    resolve({ records: [(event.target as IDBRequest).result], error: null });
+                };
+                request.onerror = (event) => {
+                    resolve({ records: [], error: (event.target as IDBRequest).error });
+                };
+            } catch (error) {
+                if (error instanceof Error) {
+                    resolve({ records: [], error });
+                } else {
+                    resolve({ records: [], error: new Error('Unknown error') });
+                }
+            }
         });
     }
     async add(tableName: string, data: object) {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise<IDBOutput>(resolve => {
-            const request = this.db!.transaction(tableName, 'readwrite')
-                .objectStore(tableName)
-                .add(data);
-            request.onsuccess = () => {
-                resolve({ records: [data], error: null });
-            };
-            request.onerror = (event) => {
-                resolve({ records: [], error: (event.target as IDBRequest).error });
-            };
+            try {
+                const request = this.db!.transaction(tableName, 'readwrite')
+                    .objectStore(tableName)
+                    .add(data);
+                request.onsuccess = () => {
+                    resolve({ records: [data], error: null });
+                };
+                request.onerror = (event) => {
+                    resolve({ records: [], error: (event.target as IDBRequest).error });
+                };
+            } catch (error) {
+                if (error instanceof Error) {
+                    resolve({ records: [], error });
+                } else {
+                    resolve({ records: [], error: new Error('Unknown error') });
+                }
+            }
         });
     }
     async update(tableName: string, id: string, data: object) {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise<IDBOutput>(resolve => {
+            try {
+                const request = this.db!.transaction(tableName, 'readwrite');
+                const store = request.objectStore(tableName);
+                const getRequest = store.get(id);
 
-            const request = this.db!.transaction(tableName, 'readwrite');
-            const store = request.objectStore(tableName);
-            const getRequest = store.get(id);
-
-            getRequest.onsuccess = (event) => {
-                const record = (event.target as IDBRequest).result;
-                if (!record) {
-                    resolve({ records: [], error: new Error(`Record with id '${id}' not found in table '${tableName}'`) });
-                    return;
-                }
-                const updatedRecord = { ...record, ...data };
-                const updateRequest = store.put(updatedRecord);
-                updateRequest.onsuccess = () => {
-                    resolve({ records: [updatedRecord], error: null });
+                getRequest.onsuccess = (event) => {
+                    const record = (event.target as IDBRequest).result;
+                    if (!record) {
+                        resolve({ records: [], error: new Error(`Record with id '${id}' not found in table '${tableName}'`) });
+                        return;
+                    }
+                    const updatedRecord = { ...record, ...data };
+                    const updateRequest = store.put(updatedRecord);
+                    updateRequest.onsuccess = () => {
+                        resolve({ records: [updatedRecord], error: null });
+                    };
+                    updateRequest.onerror = (event) => {
+                        resolve({ records: [], error: (event.target as IDBRequest).error });
+                    };
                 };
-                updateRequest.onerror = (event) => {
+                getRequest.onerror = (event) => {
                     resolve({ records: [], error: (event.target as IDBRequest).error });
                 };
-            };
-            getRequest.onerror = (event) => {
-                resolve({ records: [], error: (event.target as IDBRequest).error });
-            };
+
+            } catch (error) {
+                if (error instanceof Error) {
+                    resolve({ records: [], error });
+                } else {
+                    resolve({ records: [], error: new Error('Unknown error') });
+                }
+            }
         });
     }
     async delete(tableName: string, id: string) {
         if (!this.db) throw new Error('Database not initialized');
         
         return new Promise<IDBOutput>(resolve => {
-            const request = this.db!.transaction(tableName, 'readwrite')
-                .objectStore(tableName)
-                .delete(id);
-            request.onsuccess = () => {
-                resolve({ records: [], error: null });
-            };
-            request.onerror = (event) => {
-                resolve({ records: [], error: (event.target as IDBRequest).error });
-            };
+            try {
+                const request = this.db!.transaction(tableName, 'readwrite')
+                    .objectStore(tableName)
+                    .delete(id);
+                request.onsuccess = () => {
+                    resolve({ records: [], error: null });
+                };
+                request.onerror = (event) => {
+                    resolve({ records: [], error: (event.target as IDBRequest).error });
+                };
+            } catch (error) {
+                if (error instanceof Error) {
+                    resolve({ records: [], error });
+                } else {
+                    resolve({ records: [], error: new Error('Unknown error') });
+                }
+            }
         });
     }
 }

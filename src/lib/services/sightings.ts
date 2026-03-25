@@ -1,18 +1,7 @@
 import { API_ROUTES, BASE_PATH } from '$lib/utils/constants';
 
-interface CreateSightingInput {
-  species: string;
-  description?: string;
-  latitude: number;
-  longitude: number;
-  images: string[];
-}
-interface PaginatedResult {
-  data: Sighting[];
-  total: number;
-  page: number;
-  limit: number;
-}
+interface CreateSightingInput extends Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'> {}
+
 export async function apiFetch(url: string, option: object) {
   try {
     let response = await fetch(url, option);

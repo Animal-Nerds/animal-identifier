@@ -9,6 +9,17 @@ class sightingsServiceClass {
 
         return this.sightings;
     }
+    async getSightingById (id: string): Promise<Sighting> {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        if (this.offline)
+            throw new Error('Network error: Unable to fetch sighting');
+        const sighting = this.sightings.find((s) => s.id === id);
+
+        if (!sighting)
+            throw new Error('Sighting not found');
+        return sighting;
+    }
     async createSighting (data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>): Promise<Sighting> {
         await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -97,7 +108,7 @@ type MockSightingsService = typeof sightingsService & {
 };
 
 function setupNewStore(offline: boolean) {
-    let service = new sightingsServiceClass() as MockSightingsService;
+    let service = new sightingsServiceClass() as unknown as MockSightingsService;
     let ls = createLocalStorageMock() as Storage;
     const sightings = new SightingsStoreClass(service, ls);
     service.setOffline(offline);
