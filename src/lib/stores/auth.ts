@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import type { UserProfile } from '$lib/db/schema';
 
@@ -37,7 +37,7 @@ function loadFromStorage(): AuthState {
 }
 
 function createAuthStore() {
-	const { subscribe, set } = writable<AuthState>(loadFromStorage());
+	const { subscribe, set, } = writable<AuthState>(loadFromStorage());
 
 	if (browser) {
 		subscribe((state) => {
@@ -49,6 +49,7 @@ function createAuthStore() {
 		subscribe,
 		/** Sync from server session (httpOnly cookie → layout data). Still mirrors to localStorage via subscribe. */
 		restore(user: UserProfile | null) {
+			if (user?.email === get(auth).userEmail) return;
 			set({
 				isAuthenticated: !!user,
 				userEmail: user?.email ?? null,
