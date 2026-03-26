@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, doublePrecision, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, doublePrecision, integer, boolean } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -50,7 +50,8 @@ export const sightings = pgTable('sightings', {
 	longitude: doublePrecision('longitude'),
 	sightedAt: timestamp('sighted_at', { withTimezone: true }).notNull().defaultNow(),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+	isDeleted: boolean('is_deleted').notNull().default(false)
 });
 
 export const sightingsRelations = relations(sightings, ({ one, many }) => ({
