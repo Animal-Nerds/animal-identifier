@@ -1,18 +1,6 @@
 import { API_ROUTES, BASE_PATH } from '$lib/utils/constants';
 
-interface CreateSightingInput {
-  species: string;
-  description?: string;
-  latitude: number;
-  longitude: number;
-  images: string[];
-}
-interface PaginatedResult {
-  data: Sighting[];
-  total: number;
-  page: number;
-  limit: number;
-}
+
 export async function apiFetch(url: string, option: object) {
   try {
     let response = await fetch(url, option);
@@ -58,7 +46,7 @@ export async function getSightingById(id: string) {
   return response;
 }
 
-export async function createSighting(sighting: CreateSightingInput) {
+export async function createSighting(sighting: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BASE;
   let options = {
     method: 'POST',
@@ -71,7 +59,7 @@ export async function createSighting(sighting: CreateSightingInput) {
   return response;
 }
 
-export async function updateSighting(id: string, sighting: CreateSightingInput) {
+export async function updateSighting(id: string, sighting: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>>) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BY_ID.replace(':id', id);
   let options = {
     method: 'PUT',
