@@ -23,7 +23,7 @@
                     </div>
                     <ul>
                         <li><a href="/dashboard">Dashboard</a></li>
-                        <li><a href="/new-sighting">New Sighting</a></li>
+                        <li><a href="/sighting">New Sighting</a></li>
                     </ul>
                     <button
                         class="logout-btn"

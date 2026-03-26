@@ -51,7 +51,8 @@ export const sightings = pgTable('sightings', {
 	sightedAt: timestamp('sighted_at', { withTimezone: true }).notNull().defaultNow(),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-	isDeleted: boolean('is_deleted').notNull().default(false)
+	isDeleted: boolean('is_deleted').notNull().default(false),
+	imageUrl: text('image_url')
 });
 
 export const sightingsRelations = relations(sightings, ({ one, many }) => ({
