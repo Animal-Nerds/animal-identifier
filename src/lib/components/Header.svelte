@@ -14,7 +14,7 @@
 
         <div class="user-section {user ? '' : 'hidden'}">
             <button class="menu-toggle" onclick={() => (isOpen = !isOpen)} aria-label="Menu">
-                ☰
+                <i class="fas fa-bars"></i>
             </button>
             {#if user && isOpen}
             <nav class="dropdown-menu">
@@ -22,8 +22,8 @@
                         <p class="user-email">{user.email}</p>
                     </div>
                     <ul>
-                        <li><a href="/">Home</a></li>
-                        <li><a href="/sightings">Sightings</a></li>
+                        <li><a href="/dashboard">Dashboard</a></li>
+                        <li><a href="/sighting">New Sighting</a></li>
                     </ul>
                     <button
                         class="logout-btn"
@@ -42,7 +42,7 @@
 
 <style>
 	.app-header {
-		background: linear-gradient(135deg, #2d5a2d 0%, #1e3f1e 100%);
+		background: rgb(0, 96, 69);
 		color: white;
 		padding: 1rem;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

@@ -5,6 +5,7 @@
 	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
 	import { auth } from '$lib/stores/auth';
+	import { untrack } from 'svelte';
 
 	let { data, children } = $props();
 

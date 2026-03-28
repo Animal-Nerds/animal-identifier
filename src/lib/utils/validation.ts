@@ -147,7 +147,9 @@ import { sightings, type Sighting } from '../db/schema';
 export function validateSightingObject(sighting: Sighting): ValidationResult {
     let errors: string[] = [];
     errors.push(...validateObjectFromSchema(sighting, sightings).errors);
+    errors.push(...validateDate(sighting.sightedAt).errors);
     errors.push(...validateDate(sighting.createdAt).errors);
+    errors.push(...validateDate(sighting.updatedAt).errors);
 
     return returnValidationResult(errors);
 }
@@ -158,5 +160,21 @@ export function validateImageObject(image: Image): ValidationResult {
     errors.push(...validateObjectFromSchema(image, images).errors);
     errors.push(...validateUrl(image.url).errors);
 
+    return returnValidationResult(errors);
+}
+
+export function validateLonLat(lon: number, lat: number): ValidationResult {
+    let errors: string[] = [];
+    if (Number.isNaN(lat)) errors.push('Latitude must be a number');
+    if (Number.isNaN(lon)) errors.push('Longitude must be a number');
+    if (errors.length > 0) return returnValidationResult(errors);
+
+    if (lat < VALIDATION.LATITUDE.MIN || lat > VALIDATION.LATITUDE.MAX) {
+        errors.push(`Latitude must be between ${VALIDATION.LATITUDE.MIN} and ${VALIDATION.LATITUDE.MAX}`);
+    }
+    if (lon < VALIDATION.LONGITUDE.MIN || lon > VALIDATION.LONGITUDE.MAX) {
+        errors.push(`Longitude must be between ${VALIDATION.LONGITUDE.MIN} and ${VALIDATION.LONGITUDE.MAX}`);
+    }
+    
     return returnValidationResult(errors);
 }
