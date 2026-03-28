@@ -13,6 +13,13 @@ declare global {
 			user: import('$lib/db/schema').UserProfile | null;
 		}
 	}
+	interface CreateSightingInput {
+		species: string;
+		description?: string;
+		latitude: number;
+		longitude: number;
+		images: string[];
+	}
 
 	interface User {
 		id: string;

@@ -1,12 +1,5 @@
 import { API_ROUTES, BASE_PATH } from '$lib/utils/constants';
 
-interface CreateSightingInput {
-  species: string;
-  description?: string;
-  latitude: number;
-  longitude: number;
-  images: string[];
-}
 interface PaginatedResult {
   data: Sighting[];
   total: number;
