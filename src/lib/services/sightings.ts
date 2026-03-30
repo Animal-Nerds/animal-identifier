@@ -1,6 +1,5 @@
 import { API_ROUTES, BASE_PATH } from '$lib/utils/constants';
 
-
 export async function apiFetch(url: string, option: object) {
   try {
     let response = await fetch(url, option);
@@ -46,7 +45,9 @@ export async function getSightingById(id: string) {
   return response;
 }
 
-export async function createSighting(sighting: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>) {
+export async function createSighting(
+  sighting: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>
+) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BASE;
   let options = {
     method: 'POST',
@@ -59,7 +60,10 @@ export async function createSighting(sighting: Omit<Sighting, 'id' | 'createdAt'
   return response;
 }
 
-export async function updateSighting(id: string, sighting: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>>) {
+export async function updateSighting(
+  id: string,
+  sighting: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>>
+) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BY_ID.replace(':id', id);
   let options = {
     method: 'PUT',
@@ -82,11 +86,23 @@ export async function deleteSighting(id: string) {
   };
   await apiFetch(baseUrl, options);
 }
-
+export async function uploadImages(sightingid: string, url: string) {
+  let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.IMAGE.replace(':id', sightingid);
+  let options = {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+  let response = await apiFetch(baseUrl, options);
+  return response;
+}
 export const sightingsService = {
   getSightings,
   getSightingById,
   createSighting,
   updateSighting,
+  uploadImages,
   deleteSighting
 };
