@@ -6,6 +6,8 @@
 	"scripts": {
 		"test": "vitest",
 		"setup": "node ./scripts/setup/setup.js",
+		"db:push-schema": "drizzle-kit push --config ./drizzle.config.ts",
+		"db:production:push-schema": "drizzle-kit push --config ./production.drizzle.config.ts",
 		"predev": "node ./scripts/setup/enforce-setup.js",
 		"dev": "vite dev",
 		"build": "vite build",
