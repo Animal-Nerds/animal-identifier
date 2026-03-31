@@ -1,8 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/db/client';
 import { images, sightings } from '$lib/db/schema';
-import { VALIDATION } from '$lib/utils/constants';
+import { PAGINATION, VALIDATION } from '$lib/utils/constants';
 
 // This endpoint is for creating new sightings. All other operations on sightings (fetching, updating, deleting) are done through the /sightings/[id] endpoint.
 type CreateSightingBody = {
@@ -24,16 +24,29 @@ function toIsoString(value: Date | string | null | undefined): string | undefine
     return value.toISOString();
 }
 
-export const GET: RequestHandler = async ({ locals }) => {
+export const GET: RequestHandler = async ({ locals, url }) => {
     if (!locals.user?.id) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const page = parseInt(url.searchParams.get('page') ?? '1');
+    const limit = Math.min(
+        parseInt(url.searchParams.get('limit') ?? String(PAGINATION.DEFAULT_LIMIT)),
+        PAGINATION.MAX_LIMIT
+    );
+    const offset = (page - 1) * limit;
+
+    const [{ total }] = await db
+        .select({ total: count() })
+        .from(sightings)
+        .where(and(eq(sightings.userId, locals.user.id), eq(sightings.isDeleted, false)));
 
     const rows = await db
         .select()
         .from(sightings)
         .where(and(eq(sightings.userId, locals.user.id), eq(sightings.isDeleted, false)))
-        .orderBy(desc(sightings.createdAt));
+        .orderBy(desc(sightings.createdAt))
+        .limit(limit)
+        .offset(offset);
 
     const sightingIds = rows.map((row) => row.id);
     const imageRows =
@@ -72,7 +85,7 @@ export const GET: RequestHandler = async ({ locals }) => {
         };
     });
 
-    return json(normalized, { status: 200 });
+    return json({ data: normalized, total, page, limit }, { status: 200 });
 };
 
 // Note: we don't use a Zod schema here because we want to allow extra fields in the request body without causing validation to fail, and Zod's strict schemas would reject any unknown fields. Instead, we manually validate the required fields and ignore any additional ones.
@@ -112,7 +125,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     if (typeof data.latitude !== 'number' || Number.isNaN(data.latitude)) {
         errors.push('latitude must be a number');
     } else if (data.latitude < VALIDATION.LATITUDE.MIN || data.latitude > VALIDATION.LATITUDE.MAX) {
-        errors.push(`latitude must be between ${VALIDATION.LATITUDE.MIN} and ${VALIDATION.LATITUDE.MAX}`);
+        errors.push(
+            `latitude must be between ${VALIDATION.LATITUDE.MIN} and ${VALIDATION.LATITUDE.MAX}`
+        );
     }
 
     // Similar validation is performed for longitude to ensure it's a valid geographic coordinate.
