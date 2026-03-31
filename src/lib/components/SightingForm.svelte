@@ -4,7 +4,9 @@
 
 	let { id = null, action } = $props<{
 		id?: string | null;
-		action: ((sighting: CreateSightingInput) => void) | ((id: string, sighting: CreateSightingInput) => void);
+		action:
+			((sighting: CreateSightingInput) => void | Promise<void>) |
+			((id: string, sighting: CreateSightingInput) => void | Promise<void>);
 	}>();
 
 	let species = $state('');
