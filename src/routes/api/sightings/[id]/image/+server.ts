@@ -21,11 +21,11 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
   let body;
   try {
     body = await request.json();
-    if (!body.url) {
-      throw new Error('Bad Request');
-    }
   } catch (error) {
     return json({ error: 'Invalid Json' }, { status: 400 });
+  }
+  if (!body || !body.url) {
+    return json({ error: 'Image URL is required' }, { status: 400 });
   }
   const [created] = await db
     .insert(images)
