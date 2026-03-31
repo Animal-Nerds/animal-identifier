@@ -1,5 +1,12 @@
 import { API_ROUTES, BASE_PATH } from '$lib/utils/constants';
 
+interface PaginatedResult {
+  data: Sighting[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export async function apiFetch(url: string, option: object) {
   try {
     let response = await fetch(url, option);
