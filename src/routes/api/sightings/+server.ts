@@ -1,6 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/db/client';
-import { sightings, images } from '$lib/db/schema';
+import { images, sightings } from '$lib/db/schema';
 import { VALIDATION } from '$lib/utils/constants';
 
 // This endpoint is for creating new sightings. All other operations on sightings (fetching, updating, deleting) are done through the /sightings/[id] endpoint.
@@ -10,8 +11,68 @@ type CreateSightingBody = {
     latitude?: unknown;
     longitude?: unknown;
     seen_at?: unknown;
+    images?: unknown;
     userId?: unknown;
     user_id?: unknown;
+};
+
+function toIsoString(value: Date | string | null | undefined): string | undefined {
+    if (!value) return undefined;
+    if (typeof value === 'string') {
+        return value;
+    }
+    return value.toISOString();
+}
+
+export const GET: RequestHandler = async ({ locals }) => {
+    if (!locals.user?.id) {
+        return json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rows = await db
+        .select()
+        .from(sightings)
+        .where(and(eq(sightings.userId, locals.user.id), eq(sightings.isDeleted, false)))
+        .orderBy(desc(sightings.createdAt));
+
+    const sightingIds = rows.map((row) => row.id);
+    const imageRows =
+        sightingIds.length > 0
+            ? await db
+                .select({
+                    sightingId: images.sightingId,
+                    url: images.url
+                })
+                .from(images)
+                .where(inArray(images.sightingId, sightingIds))
+            : [];
+
+    const firstImageBySightingId = new Map<string, string>();
+    for (const imageRow of imageRows) {
+        if (!firstImageBySightingId.has(imageRow.sightingId)) {
+            firstImageBySightingId.set(imageRow.sightingId, imageRow.url);
+        }
+    }
+
+    const normalized = rows.map((row) => {
+        // Prefer explicit image_url column, then fallback to first related image.
+        const resolvedImageUrl = row.imageUrl ?? firstImageBySightingId.get(row.id);
+        return {
+            imageUrl: resolvedImageUrl ?? undefined,
+            id: row.id,
+            userId: row.userId,
+            species: row.species,
+            description: row.description ?? undefined,
+            latitude: row.latitude ?? 0,
+            longitude: row.longitude ?? 0,
+            createdAt: toIsoString(row.createdAt) ?? new Date().toISOString(),
+            updatedAt: toIsoString(row.updatedAt),
+            images: resolvedImageUrl ? [resolvedImageUrl] : [],
+            syncStatus: 'SYNCED' as SyncStatus
+        };
+    });
+
+    return json(normalized, { status: 200 });
 };
 
 // Note: we don't use a Zod schema here because we want to allow extra fields in the request body without causing validation to fail, and Zod's strict schemas would reject any unknown fields. Instead, we manually validate the required fields and ignore any additional ones.
@@ -95,6 +156,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         return json({ errors }, { status: 400 });
     }
 
+    const firstImage =
+        Array.isArray(data.images) && typeof data.images[0] === 'string' ? data.images[0] : null;
+
     // If validation passes, we proceed to insert the new sighting into the database. We use the authenticated user's ID from locals.user.id to associate the sighting with the correct user, rather than relying on any userId that might have been included in the request body.
     // Extract images from the request body if provided.
     const imageList = Array.isArray((data as any).images)
@@ -111,7 +175,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             description: (data.description as string | null | undefined) ?? null,
             latitude: data.latitude as number,
             longitude: data.longitude as number,
-            sightedAt
+            sightedAt,
+            imageUrl: firstImage
         })
         .returning();
 
