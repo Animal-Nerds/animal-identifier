@@ -5,7 +5,6 @@ const APP_SHELL = [
 	'/login',
 	'/logout',
 	'/sighting',
-	'/signout',
 	'/signup',
 	'/manifest.json',
 	'/icon192.png',
@@ -53,8 +52,34 @@ self.addEventListener('fetch', (event) => {
 	const requestUrl = new URL(event.request.url);
 	const isAppShellRequest = requestUrl.origin === self.location.origin && APP_SHELL_PATHS.has(requestUrl.pathname);
 	const isExternalRequest = requestUrl.origin !== self.location.origin;
+	const isApiRequest = requestUrl.pathname.startsWith('/api/');
+	const isNavigationRequest = event.request.mode === 'navigate';
+	const isOnline = navigator.onLine;
 
-	if (isAppShellRequest || isExternalRequest) {
+	// if online and it's a navigation, ALWAYS try the network first (with cache fallback) to get the latest content and shell updates.
+	if (isNavigationRequest && isOnline) {
+		event.respondWith((async () => {
+			try {
+				const networkResponse = await fetch(event.request);
+				if (networkResponse.ok && !networkResponse.redirected) {
+					const cache = await caches.open(CACHE_NAME);
+					await cache.put(event.request, networkResponse.clone());
+				}
+				return networkResponse;
+			} catch {
+				const cachedResponse = await caches.match(event.request);
+				if (cachedResponse) return cachedResponse;
+				return new Response('Network unavailable', {
+					status: 503,
+					statusText: 'Service Unavailable'
+				});
+			}
+		})());
+		return;
+	}
+	
+
+	if (!isApiRequest) {
 		event.respondWith((async () => {
 			const cachedResponse = await caches.match(event.request);
 			if (cachedResponse) return cachedResponse;
@@ -77,5 +102,14 @@ self.addEventListener('fetch', (event) => {
 	}
 
 	// Everything else is network-only and never cached.
-	event.respondWith(fetch(event.request));
+	event.respondWith((async () => {
+		try {
+			return await fetch(event.request);
+		} catch {
+			return new Response('Network unavailable', {
+				status: 503,
+				statusText: 'Service Unavailable'
+			});
+		}
+	})());
 });
