@@ -111,11 +111,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const data = body as CreateSightingBody;
     const errors: string[] = [];
 
-    // We then validate the presence and types of the required fields (species, latitude, longitude) and the optional fields (description, seen_at). We also check that userId is not included in the request body, as it should be derived from the authenticated user rather than provided by the client.
-    if ('userId' in data || 'user_id' in data) {
-        errors.push('userId is not allowed in request body');
-    }
-
     // We validate that the species field is a non-empty string, as it's required for creating a sighting.
     if (typeof data.species !== 'string' || data.species.trim().length === 0) {
         errors.push('species is required');
@@ -175,6 +170,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         Array.isArray(data.images) && typeof data.images[0] === 'string' ? data.images[0] : null;
 
     // If validation passes, we proceed to insert the new sighting into the database. We use the authenticated user's ID from locals.user.id to associate the sighting with the correct user, rather than relying on any userId that might have been included in the request body.
+    // Extract images from the request body if provided.
+    const imageList = Array.isArray((data as any).images)
+        ? (data as any).images
+            .filter((img: any) => typeof img === 'object' && typeof img.url === 'string')
+            .map((img: any) => img.url as string)
+        : [];
+
     const [created] = await db
         .insert(sightings)
         .values({
@@ -188,5 +190,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         })
         .returning();
 
-    return json(created, { status: 201 });
+    // Save any images that were included with the sighting.
+    let savedImages: typeof images.$inferSelect[] = [];
+    if (imageList.length > 0) {
+        savedImages = await db
+            .insert(images)
+            .values(
+                imageList.map((url: string, i: number) => ({
+                    sightingId: created.id,
+                    url,
+                    order: i
+                }))
+            )
+            .returning();
+    }
+
+    return json({ ...created, images: savedImages }, { status: 201 });
 };
