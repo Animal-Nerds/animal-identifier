@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
 	import { auth } from '$lib/stores/auth';
-	import { untrack } from 'svelte';
+	import { onMount } from 'svelte';
 
 	let { data, children } = $props();
 
@@ -28,6 +28,12 @@
 		if (browser && isProtectedRoute($page.url.pathname) && !$auth.isAuthenticated) {
 			goto('/login');
 		}
+	});
+
+	onMount(() => {
+		if (!('serviceWorker' in navigator)) return;
+
+		void navigator.serviceWorker.register('/service-worker.js');
 	});
 </script>
 
