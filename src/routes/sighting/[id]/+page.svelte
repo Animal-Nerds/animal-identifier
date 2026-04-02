@@ -31,6 +31,7 @@
 
 	onMount(async () => {
 		const id = $page.params.id;
+		if (!id) { loading = false; return; }
 
 		// Try the store first (offline-first / PWA)
 		const storeState = $sightings;
