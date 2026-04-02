@@ -12,22 +12,37 @@ const APP_SHELL = [
 	'/icon512.png'
 ];
 
+const APP_SHELL_PATHS = new Set(APP_SHELL);
+
 self.addEventListener('install', (event) => {
 	event.waitUntil(
-		caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+		(async () => {
+			const cache = await caches.open(CACHE_NAME);
+			for (const path of APP_SHELL) {
+				try {
+					const response = await fetch(path, { cache: 'no-store' });
+					if (response.ok && !response.redirected && new URL(response.url).pathname === path) {
+						await cache.put(path, response);
+					}
+				} catch {
+					// Skip unavailable shell entries during install; they can be retried later.
+				}
+			}
+		})()
 	);
 	self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
-		caches.keys().then((cacheNames) =>
-			Promise.all(
+		(async () => {
+			const cacheNames = await caches.keys();
+			await Promise.all(
 				cacheNames
 					.filter((cacheName) => cacheName !== CACHE_NAME)
 					.map((cacheName) => caches.delete(cacheName))
-			)
-		)
+			);
+		})()
 	);
 	self.clients.claim();
 });
@@ -36,28 +51,31 @@ self.addEventListener('fetch', (event) => {
 	if (event.request.method !== 'GET') return;
 
 	const requestUrl = new URL(event.request.url);
+	const isAppShellRequest = requestUrl.origin === self.location.origin && APP_SHELL_PATHS.has(requestUrl.pathname);
+	const isExternalRequest = requestUrl.origin !== self.location.origin;
 
-	if (requestUrl.origin !== self.location.origin) return;
+	if (isAppShellRequest || isExternalRequest) {
+		event.respondWith((async () => {
+			const cachedResponse = await caches.match(event.request);
+			if (cachedResponse) return cachedResponse;
 
-	if (event.request.mode === 'navigate') {
-		event.respondWith(
-			fetch(event.request).catch(async () => {
-				const cachedResponse = await caches.match('/');
-				return cachedResponse ?? Response.error();
-			})
-		);
+			try {
+				const networkResponse = await fetch(event.request);
+				if (networkResponse.ok && !networkResponse.redirected) {
+					const cache = await caches.open(CACHE_NAME);
+					await cache.put(event.request, networkResponse.clone());
+				}
+				return networkResponse;
+			} catch {
+				return new Response('Network unavailable', {
+					status: 503,
+					statusText: 'Service Unavailable'
+				});
+			}
+		})());
 		return;
 	}
 
-	event.respondWith(
-		caches.match(event.request).then((cachedResponse) => {
-			if (cachedResponse) return cachedResponse;
-
-			return fetch(event.request).then((networkResponse) => {
-				const responseClone = networkResponse.clone();
-				caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-				return networkResponse;
-			});
-		})
-	);
+	// Everything else is network-only and never cached.
+	event.respondWith(fetch(event.request));
 });
