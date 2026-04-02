@@ -160,6 +160,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         Array.isArray(data.images) && typeof data.images[0] === 'string' ? data.images[0] : null;
 
     // If validation passes, we proceed to insert the new sighting into the database. We use the authenticated user's ID from locals.user.id to associate the sighting with the correct user, rather than relying on any userId that might have been included in the request body.
+    // Extract images from the request body if provided.
+    const imageList = Array.isArray((data as any).images)
+        ? (data as any).images
+            .filter((img: any) => typeof img === 'object' && typeof img.url === 'string')
+            .map((img: any) => img.url as string)
+        : [];
+
     const [created] = await db
         .insert(sightings)
         .values({
@@ -173,5 +180,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         })
         .returning();
 
-    return json(created, { status: 201 });
+    // Save any images that were included with the sighting.
+    let savedImages: typeof images.$inferSelect[] = [];
+    if (imageList.length > 0) {
+        savedImages = await db
+            .insert(images)
+            .values(
+                imageList.map((url: string, i: number) => ({
+                    sightingId: created.id,
+                    url,
+                    order: i
+                }))
+            )
+            .returning();
+    }
+
+    return json({ ...created, images: savedImages }, { status: 201 });
 };
