@@ -22,10 +22,12 @@ type CallGetOptions = {
 };
 
 // This helper function calls the GET request handler with specified parameters and returns both the response and the parsed JSON body. It allows us to easily test different scenarios by providing different sighting IDs and user IDs.
-async function callGet({ id = 'sighting-1', userId }: CallGetOptions = {}) {
-    const response = await GET({ 
-        params: id? { id } : ({} as any),
-        locals: userId ? {user: { id: userId } } : {}
+async function callGet(options: CallGetOptions = {}) {
+    const id = 'id' in options ? options.id : 'sighting-1';
+    const userId = options.userId;
+    const response = await GET({
+        params: id ? { id } : ({} as any),
+        locals: userId ? { user: { id: userId } } : {}
     } as never);
 
     const json = await response.json();
@@ -49,7 +51,7 @@ describe('Get /api/sightings/[id]', () => {
 
     //  The second test checks that if the sighting ID is not provided in the request parameters, the endpoint returns a 400 Bad Request error. Similar to the previous test, we also verify that the database select method is not called since the request should be rejected before any database query is made.
     it('returns 400 if sighting ID is not provided', async () => {
-        const { response, json } = await callGet({ id: undefined });
+        const { response, json } = await callGet({ id: undefined, userId: 'user-1' });
 
         expect(response.status).toBe(400);
         expect(json).toEqual({ error: 'Sighting ID is required' });

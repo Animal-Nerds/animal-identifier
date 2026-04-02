@@ -60,7 +60,7 @@
 </script>
 
 <li class="sighting-card">
-	<div class="card-content">
+	<a class="card-link" href={`/sighting/${sighting.id}`}>
 		{#if imageUrl}
 			<div class="image-wrap">
 				<img class="sighting-image" src={imageUrl} alt={`Photo of ${sighting.species}`} loading="lazy" />
@@ -84,6 +84,7 @@
 		<span class="sync-badge {syncClassMap[sighting.syncStatus]}">
 			{syncLabelMap[sighting.syncStatus]}
 		</span>
+	</a>
 
 		<div class="actions-row">
 			<a class="edit-btn" href={`/sighting/${sighting.id}/edit`}>Edit</a>
@@ -97,7 +98,6 @@
 				{isDeleting ? '...' : '🗑'}
 			</button>
 		</div>
-	</div>
 </li>
 
 <style>
@@ -108,7 +108,9 @@
 		padding: 1rem;
 	}
 
-	.card-content {
+	.card-link {
+		text-decoration: none;
+		color: inherit;
 		display: grid;
 		gap: 0.6rem;
 	}

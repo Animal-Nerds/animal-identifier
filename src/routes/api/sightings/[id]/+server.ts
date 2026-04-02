@@ -2,7 +2,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db/client';
 import { sightings, images } from '$lib/db/schema';
-import { stat } from 'fs';
+
 
 // This endpoint is for fetching a single sighting by its ID. It checks that the user is authenticated and that the sighting belongs to the authenticated user before returning the sighting details. If the sighting is not found or does not belong to the user, it returns appropriate error responses.
 export const GET: RequestHandler = async ({ params, locals }) => { 
