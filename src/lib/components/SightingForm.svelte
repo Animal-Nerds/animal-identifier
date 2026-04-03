@@ -84,7 +84,7 @@
 	</div>
 
 	<div class="field">
-		<label>Location</label>
+		<label for="location">Location</label>
 		<button type="button" onclick={fetchLocation}>Get Current Location</button>
 		{#if latitude !== 0 || longitude !== 0}
 			<p class="location-display">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
