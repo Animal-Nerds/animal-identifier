@@ -96,7 +96,7 @@
 		<h2>Welcome back!</h2>
 		<p class="sub-msg">Sign in to keep tracking your wildlife sightings.</p>
 
-		<form on:submit={handleSubmit} novalidate aria-describedby="form-error">
+		<form onsubmit={handleSubmit} novalidate aria-describedby="form-error">
 			<div class="field">
 				<label for="email">Email</label>
 				<input

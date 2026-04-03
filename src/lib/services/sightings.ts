@@ -11,7 +11,9 @@ export async function apiFetch(url: string, option: object) {
   try {
     let response = await fetch(url, option);
     if (!response.ok) {
-      throw new Error(`response Status: ${response.status}`);
+      if (response.status === 503)
+        throw new Error('Network Unavailable');
+      throw new Error(`response Status: ${response.statusText}`);
     }
     let data = await response.json();
     return data;
@@ -32,6 +34,7 @@ export async function getSightings(page?: number, limit?: number) {
 
   let options = {
     method: 'GET',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json'
     }
@@ -44,6 +47,7 @@ export async function getSightingById(id: string) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BY_ID.replace(':id', id);
   let options = {
     method: 'GET',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json'
     }
@@ -57,6 +61,7 @@ export async function createSighting(
 ) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BASE;
   let options = {
+    credentials: 'include',
     method: 'POST',
     body: JSON.stringify(sighting),
     headers: {
@@ -73,6 +78,7 @@ export async function updateSighting(
 ) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BY_ID.replace(':id', id);
   let options = {
+    credentials: 'include',
     method: 'PUT',
     body: JSON.stringify(sighting),
     headers: {
@@ -86,6 +92,7 @@ export async function updateSighting(
 export async function deleteSighting(id: string) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BY_ID.replace(':id', id);
   let options = {
+    credentials: 'include',
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json'
@@ -96,6 +103,7 @@ export async function deleteSighting(id: string) {
 export async function uploadImages(sightingid: string, url: string) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.IMAGE.replace(':id', sightingid);
   let options = {
+    credentials: 'include',
     method: 'POST',
     body: JSON.stringify({ url }),
     headers: {
