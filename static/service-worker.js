@@ -108,7 +108,7 @@ self.addEventListener('fetch', (event) => {
 		} catch {
 			return new Response('Network unavailable', {
 				status: 503,
-				statusText: 'Service Unavailable'
+				statusText: 'Network Unavailable'
 			});
 		}
 	})());

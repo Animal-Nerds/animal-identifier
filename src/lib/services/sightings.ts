@@ -11,7 +11,9 @@ export async function apiFetch(url: string, option: object) {
   try {
     let response = await fetch(url, option);
     if (!response.ok) {
-      throw new Error(`response Status: ${response.status}`);
+      if (response.status === 503)
+        throw new Error('Network Unavailable');
+      throw new Error(`response Status: ${response.statusText}`);
     }
     let data = await response.json();
     return data;
