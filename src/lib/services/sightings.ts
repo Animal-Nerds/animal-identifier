@@ -53,7 +53,7 @@ export async function getSightingById(id: string) {
 }
 
 export async function createSighting(
-  sighting: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>
+  sighting: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'>
 ) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BASE;
   let options = {

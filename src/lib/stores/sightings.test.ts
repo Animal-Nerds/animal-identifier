@@ -26,7 +26,7 @@ class sightingsServiceClass {
             throw new Error('Sighting not found');
         return sighting;
     }
-    async createSighting (data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>): Promise<Sighting> {
+    async createSighting (data: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'>): Promise<Sighting> {
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         if (this.offline)
