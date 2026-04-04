@@ -61,7 +61,7 @@
 			};
 
 			if (data.has_image) {
-				imageUrl = data.image_url ?? null;
+				imageUrl = data.image_url ?? await sightingsService.getSightingImage(id);
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load sighting';
