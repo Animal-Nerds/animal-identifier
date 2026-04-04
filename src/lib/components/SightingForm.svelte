@@ -2,18 +2,31 @@
 	import { getGeolocation } from '$lib/utils/gps';
 	import { compressImage } from '$lib/utils/image-compression';
 
-	let { id = null, action } = $props<{
+	let {
+		id = null,
+		action,
+		initialSpecies = '',
+		initialDescription = '',
+		initialLatitude = 0,
+		initialLongitude = 0,
+		initialImages = []
+	} = $props<{
 		id?: string | null;
 		action:
 			((sighting: CreateSightingInput) => void | Promise<void>) |
 			((id: string, sighting: CreateSightingInput) => void | Promise<void>);
+		initialSpecies?: string;
+		initialDescription?: string;
+		initialLatitude?: number;
+		initialLongitude?: number;
+		initialImages?: string[];
 	}>();
 
-	let species = $state('');
-	let description = $state('');
-	let latitude = $state(0);
-	let longitude = $state(0);
-	let images = $state<string[]>([]);
+	let species = $state(initialSpecies);
+	let description = $state(initialDescription);
+	let latitude = $state(initialLatitude);
+	let longitude = $state(initialLongitude);
+	let images = $state<string[]>([...initialImages]);
 	let loading = $state(false);
 	let error = $state('');
 
