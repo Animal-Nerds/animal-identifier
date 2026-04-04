@@ -399,15 +399,19 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		try {
 			this.store.update((s) => ({ ...s, loading: true }));
 			const result = await this.sightingsService.updateSighting(id, data);
-			const syncedSighting = { ...result, syncStatus: 'SYNCED' as SyncStatus };
 			this.store.update((s) => {
 				const idx = this.findSightingIndex(s.sightings, id);
 				if (idx > -1) {
-					s.sightings[idx] = syncedSighting;
+					s.sightings[idx] = {
+						...s.sightings[idx],
+						...result,
+						syncStatus: 'SYNCED' as SyncStatus
+					};
 				}
 				return s;
 			});
-			await this.upsertSightingInIDB(syncedSighting);
+			const syncedSighting = get(this.store).sightings.find((s) => s.id === id);
+			if (syncedSighting) await this.upsertSightingInIDB(syncedSighting);
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to update';
 			this.store.update((s) => {
