@@ -111,6 +111,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const data = body as CreateSightingBody;
     const errors: string[] = [];
 
+    if ('userId' in data || 'user_id' in data) {
+        errors.push('userId is not allowed in request body');
+    }
+
     // We validate that the species field is a non-empty string, as it's required for creating a sighting.
     if (typeof data.species !== 'string' || data.species.trim().length === 0) {
         errors.push('species is required');

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { validateEmail, validatePassword } from '$lib/utils/validation';
 	import { BASE_PATH, API_ROUTES, VALIDATION } from '$lib/utils/constants';
@@ -58,9 +59,7 @@
 		return valid;
 	};
 
-	const handleSubmit = async (e: SubmitEvent) => {
-		e.preventDefault();
-
+	async function submitSignup() {
 		if (!validate()) return;
 
 		loading = true;
@@ -100,7 +99,7 @@
 		} finally {
 			loading = false;
 		}
-	};
+	}
 </script>
 
 <svelte:head>
@@ -112,7 +111,14 @@
 		<h2>Create your account</h2>
 		<p class="sub-msg">Join to save and share your wildlife sightings.</p>
 
-		<form on:submit={handleSubmit} novalidate aria-describedby="form-error">
+		<form
+			novalidate
+			aria-describedby="form-error"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void submitSignup();
+			}}
+		>
 			<div class="field">
 				<label for="email">Email</label>
 				<input
@@ -163,7 +169,12 @@
 				<p id="form-error" class="error server">{errors.server}</p>
 			{/if}
 
-			<button type="submit" class="btn btn-primary" disabled={loading} aria-busy={loading}>
+			<button
+				type="submit"
+				class="btn btn-primary"
+				disabled={!browser || loading}
+				aria-busy={loading}
+			>
 				{loading ? 'Creating account...' : 'Sign Up'}
 			</button>
 		</form>

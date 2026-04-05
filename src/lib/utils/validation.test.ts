@@ -161,7 +161,9 @@ describe('validateSightingObject', () => {
             longitude: -122.123456,
             sightedAt: new Date(),
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            isDeleted: false,
+            imageUrl: null
         } as Sighting;
         expect(validateSightingObject(sighting).valid).toBe(true);
     });

@@ -22,10 +22,12 @@ type CallGetOptions = {
 };
 
 // This helper function calls the GET request handler with specified parameters and returns both the response and the parsed JSON body. It allows us to easily test different scenarios by providing different sighting IDs and user IDs.
-async function callGet({ id = 'sighting-1', userId }: CallGetOptions = {}) {
-    const response = await GET({ 
-        params: id? { id } : ({} as any),
-        locals: userId ? {user: { id: userId } } : {}
+async function callGet(options: CallGetOptions = {}) {
+    const id = 'id' in options ? options.id : 'sighting-1';
+    const userId = options.userId;
+    const response = await GET({
+        params: id ? { id } : ({} as any),
+        locals: userId ? { user: { id: userId } } : {}
     } as never);
 
     const json = await response.json();
@@ -49,7 +51,7 @@ describe('Get /api/sightings/[id]', () => {
 
     //  The second test checks that if the sighting ID is not provided in the request parameters, the endpoint returns a 400 Bad Request error. Similar to the previous test, we also verify that the database select method is not called since the request should be rejected before any database query is made.
     it('returns 400 if sighting ID is not provided', async () => {
-        const { response, json } = await callGet({ id: undefined });
+        const { response, json } = await callGet({ id: undefined, userId: 'user-1' });
 
         expect(response.status).toBe(400);
         expect(json).toEqual({ error: 'Sighting ID is required' });
@@ -80,7 +82,9 @@ describe('Get /api/sightings/[id]', () => {
                 longitude: -122.11,
                 sightedAt: new Date('2026-03-21T12:34:56.000Z'),
                 createdAt: new Date('2026-03-21T12:34:56.000Z'),
-                updatedAt: new Date('2026-03-21T12:34:56.000Z')
+                updatedAt: new Date('2026-03-21T12:34:56.000Z'),
+                isDeleted: false,
+                imageUrl: null
             }
         ]);
 
@@ -103,13 +107,15 @@ describe('Get /api/sightings/[id]', () => {
             longitude: -122.123,
             sightedAt: new Date('2026-03-21T12:34:56.000Z'),
             createdAt: new Date('2026-03-21T12:35:00.000Z'),
-            updatedAt: new Date('2026-03-21T12:36:00.000Z')
+            updatedAt: new Date('2026-03-21T12:36:00.000Z'),
+            isDeleted: false,
+            imageUrl: null
         };
 
         // We mock the database responses for both the sightings query and the images query. The first call to limitMock simulates the response for the sightings query, returning a sighting that belongs to the authenticated user. The second call simulates the response for the images query, indicating that at least one image is associated with the sighting.
         limitMock
             .mockResolvedValueOnce([sightingRow]) // first query: sightings by id
-            .mockResolvedValueOnce([{ id: 'img-1' }]); // second query: images existence
+            .mockResolvedValueOnce([{ id: 'img-1', url: 'https://example.com/eagle.jpg' }]); // second query: images
 
         const { response, json } = await callGet({ id: 'sighting-1', userId: 'user-1' });
 
@@ -123,6 +129,7 @@ describe('Get /api/sightings/[id]', () => {
             longitude: -122.123,
             timestamp: sightingRow.sightedAt.toISOString(),
             has_image: true,
+            image_url: 'https://example.com/eagle.jpg',
             created_at: sightingRow.createdAt.toISOString(),
             updated_at: sightingRow.updatedAt.toISOString()
         });
@@ -142,7 +149,9 @@ describe('Get /api/sightings/[id]', () => {
             longitude: -70,
             sightedAt: new Date('2026-03-22T08:00:00.000Z'),
             createdAt: new Date('2026-03-22T08:00:00.000Z'),
-            updatedAt: new Date('2026-03-22T08:00:00.000Z')
+            updatedAt: new Date('2026-03-22T08:00:00.000Z'),
+            isDeleted: false,
+            imageUrl: null
         };
 
         // We mock the database responses for both the sightings query and the images query. The first call to limitMock simulates the response for the sightings query, returning a sighting that belongs to the authenticated user. The second call simulates the response for the images query, returning an empty array to indicate that no images are associated with the sighting.
@@ -155,6 +164,7 @@ describe('Get /api/sightings/[id]', () => {
         // We verify that the response status is 200 OK and that the JSON body contains the expected sighting details, including the has_image field set to false. We also check that the location field is null (since description is null) and that the timestamps are formatted as ISO strings.
         expect(response.status).toBe(200);
         expect(json.has_image).toBe(false);
+        expect(json.image_url).toBeNull();
         expect(json.location).toBeNull();
     });
 });

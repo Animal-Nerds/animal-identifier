@@ -53,7 +53,7 @@ export async function getSightingById(id: string) {
 }
 
 export async function createSighting(
-  sighting: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>
+  sighting: Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'>
 ) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BASE;
   let options = {
@@ -93,6 +93,19 @@ export async function deleteSighting(id: string) {
   };
   await apiFetch(baseUrl, options);
 }
+export async function getSightingImage(id: string): Promise<string | null> {
+  try {
+    const baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.IMAGE.replace(':id', id);
+    const data = await apiFetch(baseUrl, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return data.image_data ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function uploadImages(sightingid: string, url: string) {
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.IMAGE.replace(':id', sightingid);
   let options = {
@@ -108,6 +121,7 @@ export async function uploadImages(sightingid: string, url: string) {
 export const sightingsService = {
   getSightings,
   getSightingById,
+  getSightingImage,
   createSighting,
   updateSighting,
   uploadImages,

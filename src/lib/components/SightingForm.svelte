@@ -1,12 +1,26 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { getGeolocation } from '$lib/utils/gps';
 	import { compressImage } from '$lib/utils/image-compression';
 
-	let { id = null, action } = $props<{
+	type SightingFormInitial = {
+		species: string;
+		description: string;
+		latitude: number;
+		longitude: number;
+		images: string[];
+	};
+
+	let {
+		id = null,
+		initialValues = null,
+		action
+	} = $props<{
 		id?: string | null;
+		initialValues?: SightingFormInitial | null;
 		action:
-			((sighting: CreateSightingInput) => void | Promise<void>) |
-			((id: string, sighting: CreateSightingInput) => void | Promise<void>);
+			| ((sighting: CreateSightingInput) => void | Promise<void>)
+			| ((id: string, sighting: CreateSightingInput) => void | Promise<void>);
 	}>();
 
 	let species = $state('');
@@ -16,6 +30,15 @@
 	let images = $state<string[]>([]);
 	let loading = $state(false);
 	let error = $state('');
+
+	onMount(() => {
+		if (!initialValues) return;
+		species = initialValues.species;
+		description = initialValues.description;
+		latitude = initialValues.latitude;
+		longitude = initialValues.longitude;
+		images = [...initialValues.images];
+	});
 
 	function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
