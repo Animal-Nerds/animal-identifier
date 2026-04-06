@@ -75,3 +75,36 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
     .returning();
   return json(created, { status: 201 });
 };
+
+export const DELETE: RequestHandler = async ({ params, locals }) => {
+  const userId = locals.user?.id;
+  if (!userId) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const sightingId = params.id;
+  if (!sightingId) {
+    return json({ error: 'Sighting ID is required' }, { status: 400 });
+  }
+
+  const sightingRows = await db
+    .select({ id: sightings.id, userId: sightings.userId, isDeleted: sightings.isDeleted })
+    .from(sightings)
+    .where(eq(sightings.id, sightingId))
+    .limit(1);
+
+  if (sightingRows.length === 0 || sightingRows[0].isDeleted) {
+    return json({ error: 'Sighting not found' }, { status: 404 });
+  }
+
+  if (sightingRows[0].userId !== userId) {
+    return json({ error: 'Sighting not found' }, { status: 404 });
+  }
+
+  await db
+    .update(sightings)
+    .set({ updatedAt: new Date() })
+    .where(and(eq(sightings.id, sightingId), eq(sightings.userId, userId)));
+
+  return json({ success: true }, { status: 200 });
+};
