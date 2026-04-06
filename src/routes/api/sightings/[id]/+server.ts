@@ -100,70 +100,90 @@ function normalizeSightingResponse(
 }
 
 export const PUT: RequestHandler = async ({ request, params, locals }) => {
+    // 401: Unauthenticated
     if (!locals.user?.id) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
+
     const { id } = params;
     if (!id) {
         return json({ error: 'Sighting ID is required' }, { status: 400 });
     }
 
-    const sightingRows = await db.select().from(sightings).where(eq(sightings.id, id)).limit(1);
-    if (sightingRows.length === 0) {
-        return json({ error: 'Sighting not found' }, { status: 404 });
-    }
-    const existing = sightingRows[0];
-    if (existing.userId !== locals.user.id) {
-        return json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (existing.isDeleted) {
+    // Check sighting exists and belongs to user
+    const sightingRows = await db
+        .select()
+        .from(sightings)
+        .where(eq(sightings.id, id))
+        .limit(1);
+
+    if (sightingRows.length === 0 || sightingRows[0].isDeleted) {
         return json({ error: 'Sighting not found' }, { status: 404 });
     }
 
+    const existing = sightingRows[0];
+    if (existing.userId !== locals.user.id) {
+        return json({ error: 'Sighting not found' }, { status: 404 });
+    }
+
+    // Parse request body
     let body: unknown;
     try {
         body = await request.json();
     } catch {
-        return json({ errors: ['Request body must be valid JSON'] }, { status: 400 });
+        return json({ error: 'Request body must be valid JSON' }, { status: 400 });
     }
+
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
-        return json({ errors: ['Request body must be an object'] }, { status: 400 });
+        return json({ error: 'Request body must be an object' }, { status: 400 });
     }
 
     const data = body as Record<string, unknown>;
     const errors: string[] = [];
 
-    if (data.userId !== undefined || data.user_id !== undefined) {
-        errors.push('userId is not allowed in request body');
+    // Reject non-updatable fields
+    const nonUpdatableFields = ['id', 'userId', 'user_id', 'createdAt', 'created_at', 'isDeleted', 'is_deleted'];
+    for (const field of nonUpdatableFields) {
+        if (field in data) {
+            errors.push(`${field} is not allowed in request body`);
+        }
     }
 
+    // Build patch object with updatable fields only
     const patch: {
         updatedAt: Date;
         species?: string;
         description?: string | null;
         latitude?: number;
         longitude?: number;
-        imageUrl?: string | null;
+        sightedAt?: Date;
     } = {
         updatedAt: new Date()
     };
 
-    if (data.species !== undefined) {
-        if (typeof data.species !== 'string' || data.species.trim().length === 0) {
-            errors.push('species must be a non-empty string when provided');
+    // Validate animal_name (maps to species in DB)
+    if (data.animal_name !== undefined) {
+        if (typeof data.animal_name !== 'string' || data.animal_name.trim().length === 0) {
+            errors.push('animal_name must be a non-empty string');
+        } else if (data.animal_name.length > VALIDATION.ANIMAL_NAME.MAX_LENGTH) {
+            errors.push(`animal_name must not exceed ${VALIDATION.ANIMAL_NAME.MAX_LENGTH} characters`);
         } else {
-            patch.species = data.species.trim();
+            patch.species = data.animal_name.trim();
         }
     }
 
-    if (data.description !== undefined) {
-        if (data.description !== null && typeof data.description !== 'string') {
-            errors.push('description must be a string or null when provided');
+    // Validate location (maps to description in DB)
+    if (data.location !== undefined) {
+        if (typeof data.location !== 'string' || data.location.trim().length === 0) {
+            errors.push('location must be a non-empty string');
+        } else if (data.location.length > VALIDATION.LOCATION.MAX_LENGTH) {
+            errors.push(`location must not exceed ${VALIDATION.LOCATION.MAX_LENGTH} characters`);
         } else {
-            patch.description = (data.description as string | null) ?? null;
+            patch.description = data.location.trim();
         }
     }
 
+    // Validate latitude
     if (data.latitude !== undefined) {
         if (typeof data.latitude !== 'number' || Number.isNaN(data.latitude)) {
             errors.push('latitude must be a number');
@@ -174,36 +194,40 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
         }
     }
 
+    // Validate longitude
     if (data.longitude !== undefined) {
         if (typeof data.longitude !== 'number' || Number.isNaN(data.longitude)) {
             errors.push('longitude must be a number');
-        } else if (
-            data.longitude < VALIDATION.LONGITUDE.MIN ||
-            data.longitude > VALIDATION.LONGITUDE.MAX
-        ) {
-            errors.push(
-                `longitude must be between ${VALIDATION.LONGITUDE.MIN} and ${VALIDATION.LONGITUDE.MAX}`
-            );
+        } else if (data.longitude < VALIDATION.LONGITUDE.MIN || data.longitude > VALIDATION.LONGITUDE.MAX) {
+            errors.push(`longitude must be between ${VALIDATION.LONGITUDE.MIN} and ${VALIDATION.LONGITUDE.MAX}`);
         } else {
             patch.longitude = data.longitude;
         }
     }
 
-    if (data.images !== undefined) {
-        if (Array.isArray(data.images) && data.images.length === 0) {
-            patch.imageUrl = null;
+    // Validate seen_at (maps to sightedAt in DB)
+    if (data.seen_at !== undefined) {
+        if (typeof data.seen_at !== 'string') {
+            errors.push('seen_at must be an ISO 8601 timestamp string');
         } else {
-            const url = firstImageUrlFromBody(data.images);
-            if (url) {
-                patch.imageUrl = url;
+            try {
+                patch.sightedAt = new Date(data.seen_at as string);
+                if (Number.isNaN(patch.sightedAt.getTime())) {
+                    errors.push('seen_at must be a valid ISO 8601 timestamp');
+                    delete patch.sightedAt;
+                }
+            } catch {
+                errors.push('seen_at must be a valid ISO 8601 timestamp');
             }
         }
     }
 
+    // Return validation errors
     if (errors.length > 0) {
-        return json({ errors }, { status: 400 });
+        return json({ error: errors[0] }, { status: 400 });
     }
 
+    // Update with ownership enforcement in WHERE clause
     const [updated] = await db
         .update(sightings)
         .set(patch)
@@ -214,8 +238,29 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
         return json({ error: 'Sighting not found' }, { status: 404 });
     }
 
-    const displayUrl = updated.imageUrl ?? null;
-    return json(normalizeSightingResponse(updated, displayUrl), { status: 200 });
+    const imageRows = await db
+        .select({ url: images.url })
+        .from(images)
+        .where(eq(images.sightingId, updated.id))
+        .limit(1);
+
+    const firstImageUrl = imageRows[0]?.url ?? updated.imageUrl ?? null;
+
+    // Return full updated sighting object
+    return json({
+        id: updated.id,
+        user_id: updated.userId,
+        animal_name: updated.species,
+        location: updated.description ?? null,
+        latitude: updated.latitude ?? 0,
+        longitude: updated.longitude ?? 0,
+        seen_at: updated.sightedAt?.toISOString() ?? null,
+        has_image: imageRows.length > 0 || !!updated.imageUrl,
+        image_url: firstImageUrl,
+        created_at: updated.createdAt.toISOString(),
+        updated_at: updated.updatedAt.toISOString(),
+        is_deleted: updated.isDeleted
+    }, { status: 200 });
 };
 
 export const DELETE: RequestHandler = async ({ params, locals }) => {
