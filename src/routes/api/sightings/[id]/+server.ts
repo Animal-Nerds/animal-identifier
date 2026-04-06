@@ -282,5 +282,5 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
         return json({ error: 'Sighting not found' }, { status: 404 });
     }
 
-    return json({ ok: true }, { status: 200 });
+    return json({ success: true }, { status: 200 });
 };
