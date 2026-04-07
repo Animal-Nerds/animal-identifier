@@ -44,12 +44,15 @@
 
 	function getImageUrl(item: Sighting): string | null {
 		const imageList = item.images as unknown;
-		if (Array.isArray(imageList) && imageList.length > 0) {
+		if (Array.isArray(imageList)) {
+			// If images array exists, trust it — don't fall back to imageUrl
+			if (imageList.length === 0) return null;
 			const first = imageList[0] as unknown;
 			if (typeof first === 'string') return first;
 			if (first && typeof first === 'object' && 'url' in first && typeof first.url === 'string') {
 				return first.url;
 			}
+			return null;
 		}
 
 		const withPossibleUrl = item as Sighting & { imageUrl?: string; image_url?: string };
