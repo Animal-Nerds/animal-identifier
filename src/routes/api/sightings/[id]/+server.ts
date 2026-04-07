@@ -161,25 +161,37 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
         updatedAt: new Date()
     };
 
-    // Validate animal_name (maps to species in DB)
-    if (data.animal_name !== undefined) {
-        if (typeof data.animal_name !== 'string' || data.animal_name.trim().length === 0) {
+    // animal_name or species (POST /sightings and the client use `species`)
+    const rawAnimalName =
+        data.animal_name !== undefined ? data.animal_name : data.species;
+    if (rawAnimalName !== undefined) {
+        if (typeof rawAnimalName !== 'string' || rawAnimalName.trim().length === 0) {
             errors.push('animal_name must be a non-empty string');
-        } else if (data.animal_name.length > VALIDATION.ANIMAL_NAME.MAX_LENGTH) {
+        } else if (rawAnimalName.length > VALIDATION.ANIMAL_NAME.MAX_LENGTH) {
             errors.push(`animal_name must not exceed ${VALIDATION.ANIMAL_NAME.MAX_LENGTH} characters`);
         } else {
-            patch.species = data.animal_name.trim();
+            patch.species = rawAnimalName.trim();
         }
     }
 
-    // Validate location (maps to description in DB)
-    if (data.location !== undefined) {
-        if (typeof data.location !== 'string' || data.location.trim().length === 0) {
-            errors.push('location must be a non-empty string');
-        } else if (data.location.length > VALIDATION.LOCATION.MAX_LENGTH) {
+    // location or description; empty string clears description (optional field from forms)
+    const rawLocation =
+        data.location !== undefined
+            ? data.location
+            : data.description !== undefined
+              ? data.description
+              : undefined;
+    if (rawLocation !== undefined) {
+        if (rawLocation === null) {
+            patch.description = null;
+        } else if (typeof rawLocation !== 'string') {
+            errors.push('location must be a string');
+        } else if (rawLocation.trim().length === 0) {
+            patch.description = null;
+        } else if (rawLocation.length > VALIDATION.LOCATION.MAX_LENGTH) {
             errors.push(`location must not exceed ${VALIDATION.LOCATION.MAX_LENGTH} characters`);
         } else {
-            patch.description = data.location.trim();
+            patch.description = rawLocation.trim();
         }
     }
 
@@ -244,23 +256,25 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
         .where(eq(images.sightingId, updated.id))
         .limit(1);
 
-    const firstImageUrl = imageRows[0]?.url ?? updated.imageUrl ?? null;
+    const resolvedImageUrl = imageRows[0]?.url ?? updated.imageUrl ?? undefined;
 
-    // Return full updated sighting object
-    return json({
-        id: updated.id,
-        user_id: updated.userId,
-        animal_name: updated.species,
-        location: updated.description ?? null,
-        latitude: updated.latitude ?? 0,
-        longitude: updated.longitude ?? 0,
-        seen_at: updated.sightedAt?.toISOString() ?? null,
-        has_image: imageRows.length > 0 || !!updated.imageUrl,
-        image_url: firstImageUrl,
-        created_at: updated.createdAt.toISOString(),
-        updated_at: updated.updatedAt.toISOString(),
-        is_deleted: updated.isDeleted
-    }, { status: 200 });
+    // Same shape as GET /api/sightings so the client store can merge without losing `species`
+    return json(
+        {
+            imageUrl: resolvedImageUrl ?? undefined,
+            id: updated.id,
+            userId: updated.userId,
+            species: updated.species,
+            description: updated.description ?? undefined,
+            latitude: updated.latitude ?? 0,
+            longitude: updated.longitude ?? 0,
+            createdAt: updated.createdAt.toISOString(),
+            updatedAt: updated.updatedAt.toISOString(),
+            images: resolvedImageUrl ? [resolvedImageUrl] : [],
+            syncStatus: 'SYNCED' as SyncStatus
+        },
+        { status: 200 }
+    );
 };
 
 export const DELETE: RequestHandler = async ({ params, locals }) => {

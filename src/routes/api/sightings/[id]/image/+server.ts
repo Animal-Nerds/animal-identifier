@@ -52,26 +52,32 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
   if (!params.id) {
     return json({ error: 'Sighting ID is Required' }, { status: 400 });
   }
-  let row = await db.select().from(sightings).where(eq(sightings.id, params.id)).limit(1);
-  let sighting = row[0];
+  const row = await db.select().from(sightings).where(eq(sightings.id, params.id)).limit(1);
+  const sighting = row[0];
   if (!sighting) {
     return json({ error: 'No  Sighting Found' }, { status: 404 });
   }
   if (sighting.userId !== locals.user.id) {
     return json({ error: 'Unathorized acess to image' }, { status: 403 });
   }
-  let body;
+  let body: unknown;
   try {
     body = await request.json();
-  } catch (error) {
+  } catch {
     return json({ error: 'Invalid Json' }, { status: 400 });
   }
-  if (!body || !body.url) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return json({ error: 'Image URL is required' }, { status: 400 });
   }
+  const record = body as Record<string, unknown>;
+  if (typeof record.url !== 'string' || record.url.length === 0) {
+    return json({ error: 'Image URL is required' }, { status: 400 });
+  }
+  const altText =
+    typeof record.alt_text === 'string' && record.alt_text.length > 0 ? record.alt_text : undefined;
   const [created] = await db
     .insert(images)
-    .values({ sightingId: params.id, url: body.url, altText: body.alt_text })
+    .values({ sightingId: params.id, url: record.url, altText })
     .returning();
   return json(created, { status: 201 });
 };

@@ -1,8 +1,8 @@
-import { json } from '@sveltejs/kit';
+import { json, type RequestHandler } from '@sveltejs/kit';
 import { deleteSession } from '$lib/server/auth';
 import { SESSION } from '$lib/utils/constants';
 
-export const POST = async ({ cookies, url }) => {
+export const POST: RequestHandler = async ({ cookies, url }) => {
 	const token = cookies.get(SESSION.COOKIE_NAME);
 
 	try {
