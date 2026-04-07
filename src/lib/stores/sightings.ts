@@ -190,9 +190,18 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		return [...get(this.store).sightings];
 	}
 
-	private toCreatePayload(sighting: Sighting): Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'> {
-		const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, syncStatus: _syncStatus, ...rest } = sighting;
-		return rest as Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>;
+	private toCreatePayload(
+		sighting: Sighting
+	): Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'> {
+		const {
+			id: _id,
+			createdAt: _createdAt,
+			updatedAt: _updatedAt,
+			syncStatus: _syncStatus,
+			userId: _userId,
+			...rest
+		} = sighting;
+		return rest as Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'>;
 	}
 
 	private toUpdatePayload(
@@ -354,7 +363,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 		try {
 			this.store.update((s) => ({ ...s, loading: true }));
-			const created = await this.sightingsService.createSighting(data);
+			const created = await this.sightingsService.createSighting(this.toCreatePayload(tempSighting));
 			const syncedSighting = { ...created, syncStatus: 'SYNCED' as SyncStatus };
 			this.store.update((s) => {
 				const idx = this.findSightingIndex(s.sightings, tempId);
