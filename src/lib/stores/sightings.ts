@@ -283,7 +283,11 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 		try {
 			const response = await this.sightingsService.getSightings();
-			const serverSightings: Sighting[] = Array.isArray(response) ? response : response.data;
+			const serverSightings: Sighting[] = Array.isArray(response)
+				? response
+				: Array.isArray(response?.data)
+					? response.data
+					: [];
 			const localUnsynced = get(this.store).sightings.filter(
 				(sighting) => sighting.syncStatus !== 'SYNCED'
 			);

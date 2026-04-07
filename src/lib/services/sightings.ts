@@ -76,17 +76,35 @@ export async function updateSighting(
   id: string,
   sighting: Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>>
 ) {
+  // Map client field names to API field names
+  const apiBody: Record<string, unknown> = {};
+  if (sighting.species !== undefined) apiBody.animal_name = sighting.species;
+  if (sighting.description !== undefined) apiBody.location = sighting.description;
+  if (sighting.latitude !== undefined) apiBody.latitude = sighting.latitude;
+  if (sighting.longitude !== undefined) apiBody.longitude = sighting.longitude;
+
   let baseUrl = BASE_PATH + API_ROUTES.SIGHTINGS.BY_ID.replace(':id', id);
   let options = {
     credentials: 'include',
     method: 'PUT',
-    body: JSON.stringify(sighting),
+    body: JSON.stringify(apiBody),
     headers: {
       'Content-Type': 'application/json'
     }
   };
   let response = await apiFetch(baseUrl, options);
-  return response;
+  // Map API field names back to client field names
+  return {
+    id: response.id,
+    userId: response.user_id,
+    species: response.animal_name,
+    description: response.location ?? undefined,
+    latitude: response.latitude ?? 0,
+    longitude: response.longitude ?? 0,
+    createdAt: response.created_at,
+    updatedAt: response.updated_at,
+    images: response.image_url ? [{ id: '', sightingId: response.id, url: response.image_url, createdAt: new Date().toISOString() }] : []
+  };
 }
 
 export async function deleteSighting(id: string) {
