@@ -8,13 +8,17 @@ const PASSWORD = 'Test1!aB';
  */
 async function warmServiceWorker(page: import('@playwright/test').Page) {
 	await page.goto('/');
+	// Wait for SW to be active and controlling the page
 	await page.waitForFunction(
 		() =>
+			navigator.serviceWorker?.controller != null ||
 			navigator.serviceWorker
 				?.getRegistration()
 				.then((reg) => reg?.active?.state === 'activated'),
 		{ timeout: 30_000 }
 	).catch(() => {});
+	// Reload so the active SW controls this page
+	await page.reload({ waitUntil: 'networkidle' });
 }
 
 test.describe.serial('offline PWA behavior', () => {
@@ -44,8 +48,10 @@ test.describe.serial('offline PWA behavior', () => {
 	test('service worker serves cached login page offline', async ({ page, context }) => {
 		// Warm the SW and cache the login page in THIS context
 		await warmServiceWorker(page);
-		await page.goto('/login');
-		await expect(page.getByRole('button', { name: 'Log In' })).toBeVisible();
+		await page.goto('/login', { waitUntil: 'networkidle' });
+		await expect(page.getByRole('button', { name: 'Log In' })).toBeVisible({
+			timeout: 15_000
+		});
 
 		// Go offline and reload — SW should serve from cache
 		await context.setOffline(true);
