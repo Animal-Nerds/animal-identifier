@@ -2,9 +2,6 @@ name: Deploy to Proxmox
 
 on:
   push:
-    branches:
-      - main
-      - 42-t043-add-edit-and-delete-buttons-to-detail-page
 
 jobs:
   deploy:
