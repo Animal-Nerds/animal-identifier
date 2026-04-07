@@ -220,6 +220,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	private async runSyncPendingAndReload(): Promise<void> {
 		await this.ensureDBReady();
 		this.store.update((s) => ({ ...s, loading: true, error: null }));
+		console.log('[STORE DEBUG] syncPendingAndReload started');
 
 		let syncError: string | null = null;
 		const current = get(this.store);
