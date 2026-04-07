@@ -13,8 +13,8 @@
 			<p class="sub-msg">Ready to track some wildlife?</p>
 
 			<div class="action-buttons">
-				<a href="/sightings" class="btn btn-primary">View Sightings</a>
-				<a href="/upload" class="btn btn-secondary">Report Sighting</a>
+				<a href="/dashboard" class="btn btn-primary">View Sightings</a>
+				<a href="/sighting" class="btn btn-secondary">Report Sighting</a>
 			</div>
 		</div>
 	{:else}
