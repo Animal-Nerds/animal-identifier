@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const CACHE_NAME = 'animal-identifier-v1';
+const CACHE_NAME = 'animal-identifier-test';
 const APP_SHELL = [
 	'/',
 	'/dashboard',

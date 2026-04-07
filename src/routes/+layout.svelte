@@ -22,8 +22,12 @@
 
 	// Redirect effect: if trying to access protected route while not authenticated
 	$effect(() => {
-		// Hydrate store from server-side session data (httpOnly cookie -> locals.user -> layout data.user).
-		auth.restore(data.user ?? null);
+		// When offline, the server can't verify the session cookie so data.user is null.
+		// Skip restore to preserve the localStorage-backed auth state.
+		const isOffline = browser && !navigator.onLine;
+		if (!isOffline) {
+			auth.restore(data.user ?? null);
+		}
 
 		if (browser && isProtectedRoute($page.url.pathname) && !$auth.isAuthenticated) {
 			goto('/login');

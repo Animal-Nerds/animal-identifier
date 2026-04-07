@@ -157,6 +157,7 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
         latitude?: number;
         longitude?: number;
         sightedAt?: Date;
+        imageUrl?: string | null;
     } = {
         updatedAt: new Date()
     };
@@ -237,6 +238,40 @@ export const PUT: RequestHandler = async ({ request, params, locals }) => {
     // Return validation errors
     if (errors.length > 0) {
         return json({ error: errors[0] }, { status: 400 });
+    }
+
+    // Handle images: if the request includes an `images` field, sync the images table
+    const incomingImages = data.images;
+    let newImageUrl: string | null | undefined = undefined; // undefined = don't touch imageUrl
+
+    if (Array.isArray(incomingImages)) {
+        // Delete all existing images for this sighting
+        await db.delete(images).where(eq(images.sightingId, id));
+
+        // Extract URLs from incoming images (supports strings and {url: string} objects)
+        const urls: string[] = [];
+        for (const item of incomingImages) {
+            if (typeof item === 'string' && item) urls.push(item);
+            else if (item && typeof item === 'object' && 'url' in item && typeof (item as { url: unknown }).url === 'string' && (item as { url: string }).url) {
+                urls.push((item as { url: string }).url);
+            }
+        }
+
+        // Insert new images
+        for (let i = 0; i < urls.length; i++) {
+            await db.insert(images).values({
+                sightingId: id,
+                url: urls[i],
+                order: i
+            });
+        }
+
+        // Also update imageUrl on the sightings row to match the first image (or clear it)
+        newImageUrl = urls[0] ?? null;
+    }
+
+    if (newImageUrl !== undefined) {
+        patch.imageUrl = newImageUrl;
     }
 
     // Update with ownership enforcement in WHERE clause

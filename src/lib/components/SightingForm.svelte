@@ -95,7 +95,7 @@
 	}
 
 	function removeImage(index: number) {
-		images.splice(index, 1);
+		images = images.filter((_, i) => i !== index);
 	}
 </script>
 

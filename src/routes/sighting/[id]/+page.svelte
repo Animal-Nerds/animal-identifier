@@ -101,6 +101,7 @@
 </svelte:head>
 
 <section class="detail-page">
+	{#if !loading}
 	<nav class="back-nav">
 		<a href="/dashboard" class="back-link">
 			<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -109,6 +110,7 @@
 			Back to Dashboard
 		</a>
 	</nav>
+	{/if}
 
 	{#if loading}
 		<div class="loading-state">
@@ -253,20 +255,39 @@
 	{/if}
 </section>
 
+{#if !loading && sighting}
 <nav class="mobile-bottom-bar">
-	<a href="/dashboard" class="mobile-back-btn">
+	<a href="/dashboard" class="mobile-back-btn" aria-label="Back to dashboard">
 		<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 			<path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
 		</svg>
-		Dashboard
 	</a>
+	<a class="mobile-edit-btn" href={`/sighting/${sighting.id}/edit`}>
+		<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+			<path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+		</svg>
+		Edit
+	</a>
+	<button
+		class="mobile-delete-btn"
+		onclick={handleDelete}
+		disabled={isDeleting}
+		aria-label="Delete sighting"
+	>
+		<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+			<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 01.78.72l.5 6a.75.75 0 01-1.5.12l-.5-6a.75.75 0 01.72-.78zm2.84 0a.75.75 0 01.72.78l-.5 6a.75.75 0 11-1.5-.12l.5-6a.75.75 0 01.78-.72z" clip-rule="evenodd" />
+		</svg>
+		{isDeleting ? '...' : 'Delete'}
+	</button>
 </nav>
+{/if}
 
 <style>
 	.detail-page {
 		width: calc(100% + 2rem);
 		margin: -1rem;
 		min-height: calc(100vh - 80px);
+		min-height: calc(100dvh - 80px);
 		background: linear-gradient(180deg, #d8e5df 0%, #e8f0ec 100%);
 		padding: 1.25rem 1.5rem 2rem;
 		box-sizing: border-box;
@@ -647,32 +668,30 @@
 
 	@media (max-width: 719px) {
 		.mobile-bottom-bar {
-			position: fixed;
-			bottom: 0;
-			left: 0;
-			right: 0;
 			display: flex;
-			padding: 0.65rem 1rem;
-			padding-bottom: calc(0.65rem + env(safe-area-inset-bottom));
-			background: white;
-			border-top: 1px solid #e5e7eb;
-			z-index: 50;
-			box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+			gap: 0.5rem;
+			padding: 1rem;
+			padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 		}
 
 		.mobile-back-btn {
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			gap: 0.4rem;
-			width: 100%;
-			background: #047857;
-			color: white;
+			gap: 0.3rem;
+			background: #f3f4f6;
+			color: #374151;
 			text-decoration: none;
 			padding: 0.7rem;
 			border-radius: 0.65rem;
 			font-weight: 600;
-			font-size: 0.9rem;
+			font-size: 0.85rem;
+		}
+
+		.mobile-back-btn--full {
+			width: 100%;
+			background: #047857;
+			color: white;
 		}
 
 		.mobile-back-btn svg {
@@ -680,8 +699,58 @@
 			height: 1rem;
 		}
 
+		.mobile-edit-btn {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.3rem;
+			flex: 1;
+			background: #f0fdf4;
+			color: #047857;
+			text-decoration: none;
+			padding: 0.7rem;
+			border-radius: 0.65rem;
+			font-weight: 600;
+			font-size: 0.85rem;
+			border: 1px solid #d1fae5;
+		}
+
+		.mobile-edit-btn svg {
+			width: 0.85rem;
+			height: 0.85rem;
+		}
+
+		.mobile-delete-btn {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.3rem;
+			background: white;
+			color: #dc2626;
+			padding: 0.7rem;
+			border-radius: 0.65rem;
+			font-weight: 600;
+			font-size: 0.85rem;
+			border: 1px solid #fecaca;
+			cursor: pointer;
+		}
+
+		.mobile-delete-btn:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+
+		.mobile-delete-btn svg {
+			width: 0.85rem;
+			height: 0.85rem;
+		}
+
+		.actions {
+			display: none;
+		}
+
 		.detail-page {
-			padding-bottom: 5rem;
+			padding-bottom: 0;
 		}
 
 		.back-nav {

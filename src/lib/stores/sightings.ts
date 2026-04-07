@@ -342,7 +342,9 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		try {
 			await this.syncPendingAndReload();
 		} catch (err) {
-			console.error('Auto-load failed:', err);
+			if (typeof navigator === 'undefined' || navigator.onLine) {
+				console.error('Auto-load failed:', err);
+			}
 		}
 	}
 

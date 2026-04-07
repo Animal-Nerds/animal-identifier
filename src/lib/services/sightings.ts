@@ -18,7 +18,8 @@ export async function apiFetch(url: string, option: object) {
     let data = await response.json();
     return data;
   } catch (error) {
-    if (error instanceof Error) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    if (!isOffline && error instanceof Error) {
       console.error(error.message);
     }
     throw error;
