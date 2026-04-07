@@ -190,9 +190,18 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		return [...get(this.store).sightings];
 	}
 
-	private toCreatePayload(sighting: Sighting): Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'> {
-		const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, syncStatus: _syncStatus, ...rest } = sighting;
-		return rest as Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus'>;
+	private toCreatePayload(
+		sighting: Sighting
+	): Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'> {
+		const {
+			id: _id,
+			createdAt: _createdAt,
+			updatedAt: _updatedAt,
+			syncStatus: _syncStatus,
+			userId: _userId,
+			...rest
+		} = sighting;
+		return rest as Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'>;
 	}
 
 	private toUpdatePayload(
@@ -291,14 +300,14 @@ class SightingsStore implements Readable<SightingsStoreState> {
 			this.store.update((s) => ({
 				...s,
 				sightings: merged,
-				error: syncError
+				error: this.#getErrMsg(syncError)
 			}));
 			await this.reconcileIDBWithSightings(merged);
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to load latest sightings';
 			this.store.update((s) => ({
 				...s,
-				error: syncError ?? msg
+				error: this.#getErrMsg(syncError ?? msg)
 			}));
 		}
 
@@ -354,7 +363,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 		try {
 			this.store.update((s) => ({ ...s, loading: true }));
-			const created = await this.sightingsService.createSighting(data);
+			const created = await this.sightingsService.createSighting(this.toCreatePayload(tempSighting));
 			const syncedSighting = { ...created, syncStatus: 'SYNCED' as SyncStatus };
 			this.store.update((s) => {
 				const idx = this.findSightingIndex(s.sightings, tempId);
@@ -372,7 +381,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 				if (idx > -1) {
 					s.sightings[idx] = { ...s.sightings[idx], syncStatus: 'FAILED' as SyncStatus };
 				}
-				return { ...s, error: msg };
+				return { ...s, error: this.#getErrMsg(msg) };
 			});
 			await this.updateSightingStatusInIDB(tempId, 'FAILED' as SyncStatus);
 		} finally {
@@ -419,7 +428,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 				if (idx > -1) {
 					s.sightings[idx] = { ...s.sightings[idx], syncStatus: 'FAILED' as SyncStatus };
 				}
-				return { ...s, error: msg };
+				return { ...s, error: this.#getErrMsg(msg) };
 			});
 			await this.updateSightingStatusInIDB(id, 'FAILED' as SyncStatus);
 		} finally {
@@ -451,10 +460,15 @@ class SightingsStore implements Readable<SightingsStoreState> {
 			}
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to remove';
-			this.store.update((s) => ({ ...s, error: msg }));
+			this.store.update((s) => ({ ...s, error: this.#getErrMsg(msg) }));
 		} finally {
 			this.store.update((s) => ({ ...s, loading: false }));
 		}
+	}
+	#getErrMsg(e: null | string): null | string {
+		if (e === 'Network Unavailable') return null;
+		if (!e) return '';
+		return e;
 	}
 }
 

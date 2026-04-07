@@ -1,34 +1,44 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { getGeolocation } from '$lib/utils/gps';
 	import { compressImage } from '$lib/utils/image-compression';
 
+	type SightingFormInitial = {
+		species: string;
+		description: string;
+		latitude: number;
+		longitude: number;
+		images: string[];
+	};
+
 	let {
 		id = null,
-		action,
-		initialSpecies = '',
-		initialDescription = '',
-		initialLatitude = 0,
-		initialLongitude = 0,
-		initialImages = []
+		initialValues = null,
+		action
 	} = $props<{
 		id?: string | null;
+		initialValues?: SightingFormInitial | null;
 		action:
-			((sighting: CreateSightingInput) => void | Promise<void>) |
-			((id: string, sighting: CreateSightingInput) => void | Promise<void>);
-		initialSpecies?: string;
-		initialDescription?: string;
-		initialLatitude?: number;
-		initialLongitude?: number;
-		initialImages?: string[];
+			| ((sighting: CreateSightingInput) => void | Promise<void>)
+			| ((id: string, sighting: CreateSightingInput) => void | Promise<void>);
 	}>();
 
-	let species = $state(initialSpecies);
-	let description = $state(initialDescription);
-	let latitude = $state(initialLatitude);
-	let longitude = $state(initialLongitude);
-	let images = $state<string[]>([...initialImages]);
+	let species = $state('');
+	let description = $state('');
+	let latitude = $state(0);
+	let longitude = $state(0);
+	let images = $state<string[]>([]);
 	let loading = $state(false);
 	let error = $state('');
+
+	onMount(() => {
+		if (!initialValues) return;
+		species = initialValues.species;
+		description = initialValues.description;
+		latitude = initialValues.latitude;
+		longitude = initialValues.longitude;
+		images = [...initialValues.images];
+	});
 
 	function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -97,7 +107,7 @@
 	</div>
 
 	<div class="field">
-		<label>Location</label>
+		<label for="location">Location</label>
 		<button type="button" onclick={fetchLocation}>Get Current Location</button>
 		{#if latitude !== 0 || longitude !== 0}
 			<p class="location-display">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
