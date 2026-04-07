@@ -1,4 +1,4 @@
-import { json } from '@sveltejs/kit';
+import { json, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import { db } from '$lib/server/db';
@@ -10,8 +10,7 @@ import { SESSION } from '$lib/utils/constants';
 const SALT_ROUNDS = 12;
 const FAKE_PASSWORD_HASH = bcrypt.hashSync('invalid_password', SALT_ROUNDS);
 
-export const POST = async (event) => {
-	const { request, cookies, url } = event;
+export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	let email: unknown;
 	let password: unknown;
 

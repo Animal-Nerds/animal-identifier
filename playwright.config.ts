@@ -1,7 +1,12 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
 	testDir: 'e2e',
+	globalSetup: path.join(root, 'e2e/global-setup.ts'),
 	fullyParallel: false,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,

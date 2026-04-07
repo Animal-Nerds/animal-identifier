@@ -1,8 +1,8 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, type RequestHandler } from '@sveltejs/kit';
 import { deleteSession } from '$lib/server/auth';
 import { SESSION } from '$lib/utils/constants';
 
-export const GET = async ({ cookies, url }) => {
+export const GET: RequestHandler = async ({ cookies, url }) => {
 	const token = cookies.get(SESSION.COOKIE_NAME);
 
 	try {

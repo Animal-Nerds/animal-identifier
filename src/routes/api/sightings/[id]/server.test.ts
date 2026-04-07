@@ -26,7 +26,7 @@ async function callGet(options: CallGetOptions = {}) {
     const id = 'id' in options ? options.id : 'sighting-1';
     const userId = options.userId;
     const response = await GET({
-        params: id ? { id } : ({} as any),
+        params: id ? { id } : ({} as Record<string, string>),
         locals: userId ? { user: { id: userId } } : {}
     } as never);
 

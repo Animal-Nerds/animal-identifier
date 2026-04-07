@@ -24,6 +24,18 @@ function toIsoString(value: Date | string | null | undefined): string | undefine
     return value.toISOString();
 }
 
+/** URLs from `{ url: string }` entries in `images` (string entries are handled via `imageUrl` only for index 0). */
+function objectImageUrlsFromBody(images: unknown): string[] {
+    if (!Array.isArray(images)) return [];
+    const urls: string[] = [];
+    for (const item of images) {
+        if (item && typeof item === 'object' && 'url' in item && typeof (item as { url: unknown }).url === 'string') {
+            urls.push((item as { url: string }).url);
+        }
+    }
+    return urls;
+}
+
 export const GET: RequestHandler = async ({ locals, url }) => {
     if (!locals.user?.id) {
         return json({ error: 'Unauthorized' }, { status: 401 });
@@ -174,12 +186,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         Array.isArray(data.images) && typeof data.images[0] === 'string' ? data.images[0] : null;
 
     // If validation passes, we proceed to insert the new sighting into the database. We use the authenticated user's ID from locals.user.id to associate the sighting with the correct user, rather than relying on any userId that might have been included in the request body.
-    // Extract images from the request body if provided.
-    const imageList = Array.isArray((data as any).images)
-        ? (data as any).images
-            .filter((img: any) => typeof img === 'object' && typeof img.url === 'string')
-            .map((img: any) => img.url as string)
-        : [];
+    const imageList = objectImageUrlsFromBody(data.images);
 
     const [created] = await db
         .insert(sightings)
