@@ -40,7 +40,7 @@
 		images = [...initialValues.images];
 	});
 
-	function handleSubmit(e: SubmitEvent) {
+	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		error = '';
 
@@ -58,9 +58,9 @@
 		};
 
 		if (id) {
-			action(id, sighting);
+			await action(id, sighting);
 		} else {
-			action(sighting);
+			await action(sighting);
 		}
 	}
 

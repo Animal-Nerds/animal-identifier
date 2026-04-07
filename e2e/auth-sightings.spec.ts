@@ -66,6 +66,7 @@ test.describe.serial('account and sightings', () => {
 		await page.getByRole('button', { name: 'Update Sighting' }).click();
 
 		await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+
 		await expect(page.getByRole('heading', { name: speciesUpdated, level: 3 })).toBeVisible({
 			timeout: 30_000
 		});
