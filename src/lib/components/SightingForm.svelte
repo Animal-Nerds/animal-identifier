@@ -57,10 +57,14 @@
 			images
 		};
 
-		if (id) {
-			await action(id, sighting);
-		} else {
-			await action(sighting);
+		try {
+			if (id) {
+				await action(id, sighting);
+			} else {
+				await action(sighting);
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
 		}
 	}
 

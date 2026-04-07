@@ -21,7 +21,7 @@ let selectCallCount = 0;
 
 const selectMock = vi.fn(() => {
     const callIndex = selectCallCount++;
-    const chain: Record<string, any> = {};
+    const chain: Record<string, unknown> = {};
     const self = () => chain;
     chain.from = vi.fn(self);
     chain.where = vi.fn(self);

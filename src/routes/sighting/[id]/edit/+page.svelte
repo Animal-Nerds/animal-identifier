@@ -83,7 +83,7 @@
 				createdAt: new Date().toISOString()
 			}))
 		});
-		goto('/dashboard');
+		await goto('/dashboard');
 	}
 </script>
 

@@ -20,9 +20,8 @@ test.describe.serial('account and sightings', () => {
 
 	test('login after sign out', async ({ page }) => {
 		await page.goto('/signout');
-		await expect(page.getByRole('heading', { name: 'You are logged out' })).toBeVisible({
-			timeout: 15_000
-		});
+		// /signout is a server endpoint that clears the session and redirects to /logout
+		await expect(page).toHaveURL(/\/log/, { timeout: 15_000 });
 
 		await page.goto('/login');
 		await page.getByLabel('Email').fill(email);
