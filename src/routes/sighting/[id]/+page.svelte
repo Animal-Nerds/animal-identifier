@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { sightings } from '$lib/stores/sightings';
 	import { sightingsService } from '$lib/services/sightings';
 	import { Timestamp } from '$lib/utils/timestamp';
@@ -9,6 +10,24 @@
 	let error = $state<string | null>(null);
 	let sighting = $state<Sighting | null>(null);
 	let imageUrl = $state<string | null>(null);
+	let isDeleting = $state(false);
+	let deleteError = $state<string | null>(null);
+
+	async function handleDelete() {
+		if (!sighting) return;
+		const confirmed = window.confirm('Are you sure you want to delete this sighting? This cannot be undone.');
+		if (!confirmed) return;
+
+		isDeleting = true;
+		deleteError = null;
+		try {
+			await sightings.remove(sighting.id);
+			await goto('/dashboard');
+		} catch (err) {
+			deleteError = err instanceof Error ? err.message : 'Failed to delete sighting';
+			isDeleting = false;
+		}
+	}
 
 	function getImageFromSighting(item: Sighting): string | null {
 		const imageList = item.images as unknown;
@@ -138,8 +157,22 @@
 					</span>
 				{/if}
 
+				{#if deleteError}
+					<div class="delete-error" role="alert">
+						<p>{deleteError}</p>
+					</div>
+				{/if}
+
 				<div class="actions">
 					<a class="edit-btn" href={`/sighting/${sighting.id}/edit`}>Edit Sighting</a>
+					<button
+						class="delete-btn"
+						onclick={handleDelete}
+						disabled={isDeleting}
+						aria-label="Delete sighting"
+					>
+						{isDeleting ? 'Deleting...' : 'Delete Sighting'}
+					</button>
 				</div>
 			</div>
 		</article>
@@ -316,8 +349,23 @@
 		border-color: #ffd4d1;
 	}
 
+	.delete-error {
+		background: #fff1f1;
+		border: 1px solid #ffd5d2;
+		border-radius: 0.5rem;
+		padding: 0.65rem 0.75rem;
+	}
+
+	.delete-error p {
+		margin: 0;
+		color: #b42318;
+		font-size: 0.9rem;
+	}
+
 	.actions {
 		margin-top: 0.5rem;
+		display: grid;
+		gap: 0.5rem;
 	}
 
 	.edit-btn {
@@ -334,6 +382,31 @@
 		font-size: 1rem;
 		text-align: center;
 		box-sizing: border-box;
+	}
+
+	.delete-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		background: #dc2626;
+		color: white;
+		border: none;
+		border-radius: 0.6rem;
+		padding: 0.65rem 1rem;
+		font-weight: 600;
+		font-size: 1rem;
+		cursor: pointer;
+		box-sizing: border-box;
+	}
+
+	.delete-btn:hover {
+		background: #b91c1c;
+	}
+
+	.delete-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.mobile-bottom-bar {
