@@ -40,7 +40,7 @@
 		images = [...initialValues.images];
 	});
 
-	function handleSubmit(e: SubmitEvent) {
+	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		error = '';
 
@@ -57,10 +57,14 @@
 			images
 		};
 
-		if (id) {
-			action(id, sighting);
-		} else {
-			action(sighting);
+		try {
+			if (id) {
+				await action(id, sighting);
+			} else {
+				await action(sighting);
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
 		}
 	}
 
@@ -91,7 +95,7 @@
 	}
 
 	function removeImage(index: number) {
-		images.splice(index, 1);
+		images = images.filter((_, i) => i !== index);
 	}
 </script>
 

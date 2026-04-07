@@ -12,7 +12,7 @@
 			longitude: data.longitude,
 			images: data.images.map((url) => ({ id: '', sightingId: '', url, createdAt: '' }))
 		});
-		goto('/dashboard');
+		await goto('/dashboard');
 	}
 </script>
 

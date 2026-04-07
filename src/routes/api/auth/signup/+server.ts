@@ -1,4 +1,4 @@
-import { json } from '@sveltejs/kit';
+import { json, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { hashPassword, generateSessionToken } from '$lib/server/auth';
@@ -6,8 +6,7 @@ import { users, sessions } from '$lib/db/schema';
 import { validateEmail, validatePassword } from '$lib/utils/validation';
 import { SESSION } from '$lib/utils/constants';
 
-export const POST = async (event) => {
-	const { request, cookies, url } = event;
+export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	let email: unknown;
 	let password: unknown;
 

@@ -18,7 +18,8 @@ export async function apiFetch(url: string, option: object) {
     let data = await response.json();
     return data;
   } catch (error) {
-    if (error instanceof Error) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    if (!isOffline && error instanceof Error) {
       console.error(error.message);
     }
     throw error;
@@ -40,7 +41,10 @@ export async function getSightings(page?: number, limit?: number) {
     }
   };
   let response = await apiFetch(baseUrl, options);
-  return response;
+  // API returns { data: [...], total, page, limit } — extract the array
+  if (Array.isArray(response)) return response;
+  if (response?.data && Array.isArray(response.data)) return response.data;
+  return [];
 }
 
 export async function getSightingById(id: string) {

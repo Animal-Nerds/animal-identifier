@@ -10,7 +10,7 @@ declare global {
 		}
 
 		interface PageData {
-			user: import('$lib/db/schema').UserProfile | null;
+			user?: import('$lib/db/schema').UserProfile | null;
 		}
 	}
 	interface CreateSightingInput {

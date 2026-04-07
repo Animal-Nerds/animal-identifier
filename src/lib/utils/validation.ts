@@ -81,7 +81,7 @@ export function validateDate(val: Date): ValidationResult {
     return returnValidationResult(errors);
 }
 
-export function checkForType(value: any, expectedType: string, canBeNull: boolean): boolean {
+export function checkForType(value: unknown, expectedType: string, canBeNull: boolean): boolean {
     if (canBeNull && value === null)
         return true;
     if (expectedType === 'date')

@@ -1,6 +1,6 @@
-import { json } from '@sveltejs/kit';
+import { json, type RequestHandler } from '@sveltejs/kit';
 
-export const GET = async ({ locals }) => {
+export const GET: RequestHandler = async ({ locals }) => {
 	const user = locals.user;
 	if (!user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });

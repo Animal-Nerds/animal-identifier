@@ -1,0 +1,41 @@
+name: Deploy to Proxmox
+
+on:
+  push:
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create .env from secrets
+        run: |
+          cat > .env << EOF
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          EOF
+
+      - name: Build and restart containers
+        run: docker compose -f docker-compose.prod.yml up -d --build
+
+      - name: Wait for app to be healthy
+        run: |
+          echo "Waiting for app to start..."
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200\|302"; then
+              echo "App is up!"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App failed to start"
+          docker compose -f docker-compose.prod.yml logs app
+          exit 1
+
+      - name: Clean up old Docker images
+        run: docker image prune -f
