@@ -46,7 +46,7 @@ test.describe.serial('account and sightings', () => {
 		await page.getByRole('button', { name: 'Create Sighting' }).click();
 
 		await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
-		await expect(page.getByRole('heading', { name: species, level: 3 })).toBeVisible({
+		await expect(page.getByRole('heading', { name: species, level: 2 })).toBeVisible({
 			timeout: 30_000
 		});
 	});
@@ -67,7 +67,7 @@ test.describe.serial('account and sightings', () => {
 
 		await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
 
-		await expect(page.getByRole('heading', { name: speciesUpdated, level: 3 })).toBeVisible({
+		await expect(page.getByRole('heading', { name: speciesUpdated, level: 2 })).toBeVisible({
 			timeout: 30_000
 		});
 	});

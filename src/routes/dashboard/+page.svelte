@@ -55,18 +55,22 @@
 
 <svelte:head>
 	<title>Dashboard - Animal Identifier</title>
+	<meta name="description" content="View and manage your wildlife sightings. Track species, locations, and photos from your observations." />
 </svelte:head>
 
 <section class="dashboard-page">
 	<header class="title-row">
 		<div class="title-block">
 			<h1>My Sightings</h1>
-			<p>{totalSightings} {totalSightings === 1 ? 'sighting recorded' : 'sightings recorded'}</p>
+			<p class="subtitle">{totalSightings} {totalSightings === 1 ? 'sighting recorded' : 'sightings recorded'}</p>
 		</div>
 		<a class="new-sighting-btn" href="/sighting">+ New Sighting</a>
 	</header>
 
 	<div class="search-wrap">
+		<svg class="search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+			<path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+		</svg>
 		<input
 			class="search-input"
 			type="search"
@@ -79,11 +83,19 @@
 
 	<section class="list-section">
 		{#if error}
-			<p class="error">{error}</p>
+			<div class="error">
+				<svg class="error-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+				</svg>
+				<p>{error}</p>
+			</div>
 		{/if}
 
 		{#if loading && sightingsList.length > 0}
-			<p class="inline-status">Updating from server...</p>
+			<div class="updating-bar">
+				<div class="updating-spinner"></div>
+				<p class="inline-status">Updating from server...</p>
+			</div>
 		{/if}
 
 		{#if sightingsList.length > 0}
@@ -98,15 +110,27 @@
 					{/each}
 				</ul>
 			{:else}
-				<p class="inline-status">No sightings match your search.</p>
+				<div class="no-results">
+					<p class="inline-status">No sightings match your search.</p>
+				</div>
 			{/if}
 		{:else if loading || !initialized}
-			<p class="inline-status">Loading sightings...</p>
+			<div class="loading-state">
+				<div class="loading-spinner"></div>
+				<p class="inline-status">Loading sightings...</p>
+			</div>
 		{:else}
 			<div class="empty-state">
-				<div class="empty-icon" aria-hidden="true">🌲</div>
+				<div class="empty-icon" aria-hidden="true">
+					<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M24 4C13 4 6 14 6 24s7 20 18 20 18-10 18-20S35 4 24 4z" />
+						<path d="M18 20c-2-4 0-8 4-8s5 4 3 8M26 20c-2-4 0-8 4-8s5 4 3 8" />
+						<path d="M14 30c2 4 6 6 10 6s8-2 10-6" />
+					</svg>
+				</div>
 				<h2>No sightings yet</h2>
 				<p>Start tracking wildlife by creating your first sighting</p>
+				<a class="empty-cta" href="/sighting">Create your first sighting</a>
 			</div>
 		{/if}
 	</section>
@@ -116,130 +140,258 @@
 	.dashboard-page {
 		width: calc(100% + 2rem);
 		margin: -1rem;
-		display: grid;
-		gap: 0;
-		align-content: start;
-		padding: 0.75rem 1rem 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		padding: 1.5rem 1.5rem 2rem;
 		min-height: calc(100vh - 80px);
-		background: #d8e5df;
+		background: linear-gradient(180deg, #d8e5df 0%, #e8f0ec 100%);
 		box-sizing: border-box;
 	}
 
 	.title-row {
 		display: flex;
 		justify-content: space-between;
-		align-items: flex-start;
+		align-items: center;
 		gap: 1rem;
 		flex-wrap: wrap;
 	}
 
 	.title-block h1 {
 		margin: 0;
-		font-size: 2.15rem;
-		font-weight: 700;
-		color: #065f46;
+		font-size: 1.85rem;
+		font-weight: 800;
+		color: #064e3b;
+		letter-spacing: -0.02em;
 	}
 
-	.title-block p {
-		margin: 0.25rem 0 0;
-		color: #4b5563;
-		font-size: 1.1rem;
+	.subtitle {
+		margin: 0.15rem 0 0;
+		color: #374151;
+		font-size: 0.9rem;
+		font-weight: 500;
 	}
 
 	.new-sighting-btn {
 		text-decoration: none;
 		background: #047857;
 		color: white;
-		padding: 0.45rem 0.9rem;
-		border-radius: 0.5rem;
-		font-size: 0.82rem;
+		padding: 0.6rem 1.15rem;
+		border-radius: 0.65rem;
+		font-size: 0.85rem;
 		font-weight: 600;
-		box-shadow: 0 8px 16px rgba(4, 120, 87, 0.2);
+		box-shadow: 0 4px 14px rgba(4, 120, 87, 0.25);
+		transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+	}
+
+	.new-sighting-btn:hover {
+		background: #065f46;
+		box-shadow: 0 6px 20px rgba(4, 120, 87, 0.35);
+	}
+
+	.new-sighting-btn:active {
+		transform: scale(0.97);
 	}
 
 	.search-wrap {
-		max-width: 430px;
-		margin-top: 0;
+		position: relative;
+		max-width: 460px;
+	}
+
+	.search-icon {
+		position: absolute;
+		left: 0.85rem;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 1rem;
+		height: 1rem;
+		color: #6b7280;
+		pointer-events: none;
 	}
 
 	.search-input {
 		width: 100%;
-		border: 1px solid #79ddb8;
-		border-radius: 0.5rem;
-		padding: 0.7rem 0.9rem;
-		background: #eceff2;
+		border: 1px solid rgba(121, 221, 184, 0.6);
+		border-radius: 0.65rem;
+		padding: 0.65rem 0.9rem 0.65rem 2.5rem;
+		background: rgba(255, 255, 255, 0.85);
 		color: #374151;
+		font-size: 0.9rem;
+		backdrop-filter: blur(4px);
+		transition: border-color 0.15s, box-shadow 0.15s;
+		box-sizing: border-box;
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: #34d399;
+		box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
 	}
 
 	.list-section {
-		padding-top: 0;
-		margin-top: 0.65rem;
+		flex: 1;
 	}
 
 	.inline-status {
 		margin: 0;
-		font-size: 0.95rem;
-		color: #4b5563;
+		font-size: 0.9rem;
+		color: #374151;
+	}
+
+	.updating-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		margin-bottom: 1rem;
+		background: rgba(255, 255, 255, 0.7);
+		border-radius: 0.5rem;
+	}
+
+	.updating-spinner {
+		width: 14px;
+		height: 14px;
+		border: 2px solid #d1d5db;
+		border-top-color: #047857;
+		border-radius: 50%;
+		animation: spin 0.7s linear infinite;
 	}
 
 	.error {
-		margin: 0 0 0.75rem;
-		color: #b42318;
-		background: #fff1f1;
-		border: 1px solid #ffd5d2;
-		border-radius: 0.5rem;
-		padding: 0.65rem 0.75rem;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		margin: 0 0 1rem;
+		color: #991b1b;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 0.65rem;
+		padding: 0.75rem 1rem;
+		font-size: 0.9rem;
 	}
 
+	.error p {
+		margin: 0;
+	}
+
+	.error-icon {
+		width: 1.1rem;
+		height: 1.1rem;
+		flex-shrink: 0;
+		margin-top: 0.1rem;
+		color: #dc2626;
+	}
+
+	/* Loading state */
+	.loading-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		min-height: 260px;
+	}
+
+	.loading-spinner {
+		width: 36px;
+		height: 36px;
+		border: 3px solid #d1fae5;
+		border-top-color: #047857;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	/* Empty state */
 	.empty-state {
-		min-height: 300px;
-		display: grid;
-		place-items: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
 		text-align: center;
-		gap: 0.65rem;
+		gap: 0.5rem;
+		min-height: 320px;
 		padding: 2rem 1rem;
 	}
 
 	.empty-icon {
+		width: 72px;
+		height: 72px;
+		border-radius: 999px;
+		background: linear-gradient(135deg, #d1fae5, #a7f3d0);
 		display: grid;
 		place-items: center;
-		width: 82px;
-		height: 82px;
-		border-radius: 999px;
-		background: #b7efda;
-		font-size: 1.7rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.empty-icon svg {
+		width: 36px;
+		height: 36px;
+		color: #065f46;
 	}
 
 	.empty-state h2 {
 		margin: 0;
-		font-size: 2rem;
-		color: #374151;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #1f2937;
 	}
 
 	.empty-state p {
 		margin: 0;
-		color: #6b7280;
+		color: #4b5563;
+		font-size: 0.95rem;
 	}
 
+	.empty-cta {
+		display: inline-block;
+		margin-top: 0.75rem;
+		padding: 0.6rem 1.25rem;
+		background: #047857;
+		color: white;
+		text-decoration: none;
+		border-radius: 0.65rem;
+		font-weight: 600;
+		font-size: 0.9rem;
+		box-shadow: 0 4px 14px rgba(4, 120, 87, 0.2);
+	}
+
+	.no-results {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 120px;
+	}
+
+	/* Grid */
 	.sightings-list {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		display: grid;
-		gap: 0.8rem;
+		gap: 1rem;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	@media (max-width: 1100px) {
+		.sightings-list {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 
 	@media (max-width: 720px) {
 		.dashboard-page {
 			width: calc(100% + 2rem);
 			margin: -1rem;
-			padding: 0.6rem 0.9rem 1rem;
-			gap: 0.75rem;
+			padding: 1rem;
+			gap: 1rem;
 		}
 
 		.title-block h1 {
-			font-size: 2.05rem;
+			font-size: 1.6rem;
 		}
 
 		.new-sighting-btn {
@@ -249,15 +401,7 @@
 		.search-wrap {
 			max-width: none;
 		}
-	}
 
-	@media (max-width: 1100px) {
-		.sightings-list {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (max-width: 760px) {
 		.sightings-list {
 			grid-template-columns: 1fr;
 		}

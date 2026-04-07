@@ -13,6 +13,13 @@
 	let isDeleting = $state(false);
 	let deleteError = $state<string | null>(null);
 
+	const syncLabelMap: Record<string, string> = {
+		PENDING: 'Pending sync',
+		SYNCING: 'Syncing...',
+		FAILED: 'Sync failed',
+		OFFLINE: 'Offline'
+	};
+
 	async function handleDelete() {
 		if (!sighting) return;
 		const confirmed = window.confirm('Are you sure you want to delete this sighting? This cannot be undone.');
@@ -52,7 +59,6 @@
 		const id = $page.params.id;
 		if (!id) { loading = false; return; }
 
-		// Try the store first (offline-first / PWA)
 		const storeState = $sightings;
 		const cached = storeState.sightings.find((s) => s.id === id);
 
@@ -63,7 +69,6 @@
 			return;
 		}
 
-		// Fall back to API
 		try {
 			const data = await sightingsService.getSightingById(id);
 			sighting = {
@@ -92,20 +97,32 @@
 
 <svelte:head>
 	<title>{sighting ? sighting.species : 'Sighting'} - Animal Identifier</title>
+	<meta name="description" content={sighting ? `Details for ${sighting.species} sighting` : 'View sighting details'} />
 </svelte:head>
 
 <section class="detail-page">
 	<nav class="back-nav">
-		<a href="/dashboard" class="back-link">← Back to Dashboard</a>
+		<a href="/dashboard" class="back-link">
+			<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+				<path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
+			</svg>
+			Back to Dashboard
+		</a>
 	</nav>
 
 	{#if loading}
 		<div class="loading-state">
+			<div class="loading-spinner"></div>
 			<p>Loading sighting...</p>
 		</div>
 	{:else if error}
 		<div class="error-state">
-			<p class="error-message">{error}</p>
+			<div class="error-card">
+				<svg class="error-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+				</svg>
+				<p>{error}</p>
+			</div>
 			<a href="/dashboard" class="back-btn">Back to Dashboard</a>
 		</div>
 	{:else if sighting}
@@ -122,63 +139,113 @@
 			{/if}
 
 			<div class="info-section">
-				<h1 class="species-name">{sighting.species}</h1>
-
-				{#if sighting.description}
-					<div class="detail-field">
-						<span class="field-label">Location</span>
-						<p class="field-value">{sighting.description}</p>
-					</div>
-				{/if}
-
-				<div class="detail-field">
-					<span class="field-label">Coordinates</span>
-					<p class="field-value coordinates">{formatCoordinates(sighting.latitude, sighting.longitude)}</p>
+				<div class="info-header">
+					<h1 class="species-name">{sighting.species}</h1>
+					{#if sighting.syncStatus && sighting.syncStatus !== 'SYNCED'}
+						<span class="sync-badge {sighting.syncStatus.toLowerCase()}">
+							{syncLabelMap[sighting.syncStatus] ?? sighting.syncStatus}
+						</span>
+					{/if}
 				</div>
 
-				<div class="detail-field">
-					<span class="field-label">Spotted</span>
-					<p class="field-value">{Timestamp.formatForDisplay(new Date(sighting.createdAt))}</p>
-				</div>
+				<div class="fields-grid">
+					{#if sighting.description}
+						<div class="detail-field">
+							<div class="field-icon">
+								<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+								</svg>
+							</div>
+							<div>
+								<span class="field-label">Description</span>
+								<p class="field-value">{sighting.description}</p>
+							</div>
+						</div>
+					{/if}
 
-				{#if sighting.updatedAt}
 					<div class="detail-field">
-						<span class="field-label">Last updated</span>
-						<p class="field-value">{Timestamp.formatForDisplay(new Date(sighting.updatedAt))}</p>
+						<div class="field-icon">
+							<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path fill-rule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.274 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clip-rule="evenodd" />
+							</svg>
+						</div>
+						<div>
+							<span class="field-label">Coordinates</span>
+							<p class="field-value coordinates">{formatCoordinates(sighting.latitude, sighting.longitude)}</p>
+						</div>
 					</div>
-				{/if}
 
-				{#if sighting.syncStatus && sighting.syncStatus !== 'SYNCED'}
-					<span class="sync-badge {sighting.syncStatus.toLowerCase()}">
-						{sighting.syncStatus === 'PENDING' ? 'Pending sync' : ''}
-						{sighting.syncStatus === 'FAILED' ? 'Sync failed' : ''}
-						{sighting.syncStatus === 'OFFLINE' ? 'Offline' : ''}
-						{sighting.syncStatus === 'SYNCING' ? 'Syncing...' : ''}
-					</span>
-				{/if}
+					<div class="detail-field">
+						<div class="field-icon">
+							<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path fill-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clip-rule="evenodd" />
+							</svg>
+						</div>
+						<div>
+							<span class="field-label">Spotted</span>
+							<p class="field-value">{Timestamp.formatForDisplay(new Date(sighting.createdAt))}</p>
+						</div>
+					</div>
+
+					{#if sighting.updatedAt}
+						<div class="detail-field">
+							<div class="field-icon">
+								<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H4.598a.75.75 0 00-.75.75v3.634a.75.75 0 001.5 0v-2.033l.312.311a7 7 0 0011.712-3.138.75.75 0 00-1.06-.18zm-1.624-7.848a7 7 0 00-11.712 3.138.75.75 0 001.06.18 5.5 5.5 0 019.201-2.466l.312.311H10.116a.75.75 0 000 1.5h3.634a.75.75 0 00.75-.75V1.855a.75.75 0 00-1.5 0v2.033l-.312-.312z" clip-rule="evenodd" />
+								</svg>
+							</div>
+							<div>
+								<span class="field-label">Last updated</span>
+								<p class="field-value">{Timestamp.formatForDisplay(new Date(sighting.updatedAt))}</p>
+							</div>
+						</div>
+					{/if}
+				</div>
 
 				{#if deleteError}
 					<div class="delete-error" role="alert">
+						<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+						</svg>
 						<p>{deleteError}</p>
 					</div>
 				{/if}
 
 				<div class="actions">
-					<a class="edit-btn" href={`/sighting/${sighting.id}/edit`}>Edit Sighting</a>
+					<a class="edit-btn" href={`/sighting/${sighting.id}/edit`}>
+						<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+						</svg>
+						Edit Sighting
+					</a>
 					<button
 						class="delete-btn"
 						onclick={handleDelete}
 						disabled={isDeleting}
 						aria-label="Delete sighting"
 					>
-						{isDeleting ? 'Deleting...' : 'Delete Sighting'}
+						{#if isDeleting}
+							<div class="delete-spinner"></div>
+							Deleting...
+						{:else}
+							<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 01.78.72l.5 6a.75.75 0 01-1.5.12l-.5-6a.75.75 0 01.72-.78zm2.84 0a.75.75 0 01.72.78l-.5 6a.75.75 0 11-1.5-.12l.5-6a.75.75 0 01.78-.72z" clip-rule="evenodd" />
+							</svg>
+							Delete Sighting
+						{/if}
 					</button>
 				</div>
 			</div>
 		</article>
 	{:else}
-		<div class="error-state">
-			<div class="empty-icon" aria-hidden="true">🔍</div>
+		<div class="not-found-state">
+			<div class="not-found-icon" aria-hidden="true">
+				<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+					<circle cx="20" cy="20" r="14" />
+					<path d="M30 30l12 12" stroke-linecap="round" />
+					<path d="M15 17h10M15 23h6" stroke-linecap="round" />
+				</svg>
+			</div>
 			<h2>Sighting not found</h2>
 			<p>This sighting may have been deleted or doesn't exist.</p>
 			<a href="/dashboard" class="back-btn">Back to Dashboard</a>
@@ -187,7 +254,12 @@
 </section>
 
 <nav class="mobile-bottom-bar">
-	<a href="/dashboard" class="mobile-back-btn">← Dashboard</a>
+	<a href="/dashboard" class="mobile-back-btn">
+		<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+			<path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
+		</svg>
+		Dashboard
+	</a>
 </nav>
 
 <style>
@@ -195,92 +267,172 @@
 		width: calc(100% + 2rem);
 		margin: -1rem;
 		min-height: calc(100vh - 80px);
-		background: #d8e5df;
-		padding: 0.75rem 1rem 2rem;
+		background: linear-gradient(180deg, #d8e5df 0%, #e8f0ec 100%);
+		padding: 1.25rem 1.5rem 2rem;
 		box-sizing: border-box;
 	}
 
 	.back-nav {
-		margin-bottom: 0.75rem;
+		margin-bottom: 1rem;
 	}
 
 	.back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
 		color: #047857;
 		text-decoration: none;
 		font-weight: 600;
+		font-size: 0.9rem;
+		transition: color 0.15s;
+	}
+
+	.back-link:hover {
+		color: #065f46;
+	}
+
+	.back-link svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	/* Loading */
+	.loading-state {
+		min-height: 300px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+	}
+
+	.loading-state p {
+		margin: 0;
+		color: #374151;
 		font-size: 0.95rem;
 	}
 
-	.loading-state {
-		min-height: 300px;
-		display: grid;
-		place-items: center;
-		color: #4b5563;
-		font-size: 1rem;
+	.loading-spinner {
+		width: 36px;
+		height: 36px;
+		border: 3px solid #d1fae5;
+		border-top-color: #047857;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
 	}
 
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	/* Error */
 	.error-state {
 		min-height: 300px;
-		display: grid;
-		place-items: center;
-		text-align: center;
-		gap: 0.65rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
 		padding: 2rem 1rem;
 	}
 
-	.error-state h2 {
-		margin: 0;
-		font-size: 1.5rem;
-		color: #374151;
+	.error-card {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 0.75rem;
+		padding: 1rem 1.25rem;
+		max-width: 400px;
 	}
 
-	.error-state p {
+	.error-card p {
 		margin: 0;
-		color: #6b7280;
+		color: #991b1b;
+		font-size: 0.9rem;
 	}
 
-	.error-message {
-		color: #b42318;
-		background: #fff1f1;
-		border: 1px solid #ffd5d2;
-		border-radius: 0.5rem;
-		padding: 0.65rem 0.75rem;
-		margin: 0;
-	}
-
-	.empty-icon {
-		display: grid;
-		place-items: center;
-		width: 82px;
-		height: 82px;
-		border-radius: 999px;
-		background: #b7efda;
-		font-size: 1.7rem;
+	.error-icon {
+		width: 1.1rem;
+		height: 1.1rem;
+		flex-shrink: 0;
+		margin-top: 0.1rem;
+		color: #dc2626;
 	}
 
 	.back-btn {
 		text-decoration: none;
 		background: #047857;
 		color: white;
-		padding: 0.55rem 1.2rem;
-		border-radius: 0.5rem;
+		padding: 0.6rem 1.25rem;
+		border-radius: 0.65rem;
 		font-weight: 600;
 		font-size: 0.9rem;
+		box-shadow: 0 4px 14px rgba(4, 120, 87, 0.2);
+		transition: background 0.15s;
 	}
 
+	.back-btn:hover {
+		background: #065f46;
+	}
+
+	/* Not found */
+	.not-found-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		gap: 0.5rem;
+		min-height: 320px;
+		padding: 2rem 1rem;
+	}
+
+	.not-found-icon {
+		width: 72px;
+		height: 72px;
+		border-radius: 999px;
+		background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+		display: grid;
+		place-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	.not-found-icon svg {
+		width: 36px;
+		height: 36px;
+		color: #065f46;
+	}
+
+	.not-found-state h2 {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #1f2937;
+	}
+
+	.not-found-state p {
+		margin: 0;
+		color: #4b5563;
+		font-size: 0.95rem;
+	}
+
+	/* Detail card */
 	.sighting-detail {
-		background: #f4f5f7;
-		border: 1px solid #7ce3ba;
-		border-radius: 0.9rem;
+		background: white;
+		border: 1px solid rgba(124, 227, 186, 0.5);
+		border-radius: 1rem;
 		overflow: hidden;
 		max-width: 600px;
 		margin: 0 auto;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
 	}
 
 	.image-section {
 		width: 100%;
-		background: #e7f3ee;
-		border-bottom: 1px solid #cceede;
+		background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+		border-bottom: 1px solid #e5e7eb;
 	}
 
 	.sighting-image {
@@ -291,81 +443,133 @@
 	}
 
 	.info-section {
-		padding: 1.25rem;
-		display: grid;
-		gap: 1rem;
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.info-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.75rem;
 	}
 
 	.species-name {
 		margin: 0;
-		font-size: 2rem;
-		font-weight: 700;
-		color: #065f46;
+		font-size: 1.75rem;
+		font-weight: 800;
+		color: #064e3b;
+		letter-spacing: -0.02em;
+		line-height: 1.2;
+	}
+
+	/* Fields */
+	.fields-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 
 	.detail-field {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+	}
+
+	.field-icon {
+		width: 32px;
+		height: 32px;
+		border-radius: 0.5rem;
+		background: #f0fdf4;
 		display: grid;
-		gap: 0.15rem;
+		place-items: center;
+		flex-shrink: 0;
+		margin-top: 0.1rem;
+	}
+
+	.field-icon svg {
+		width: 16px;
+		height: 16px;
+		color: #047857;
 	}
 
 	.field-label {
-		font-size: 0.8rem;
-		font-weight: 600;
-		color: #6b7280;
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: #4b5563;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.05em;
 	}
 
 	.field-value {
-		margin: 0;
-		font-size: 1.05rem;
-		color: #374151;
+		margin: 0.1rem 0 0;
+		font-size: 0.95rem;
+		color: #1f2937;
+		line-height: 1.45;
 	}
 
 	.coordinates {
-		font-family: monospace;
-		font-size: 0.95rem;
+		font-family: 'SF Mono', 'Fira Code', monospace;
+		font-size: 0.88rem;
 	}
 
+	/* Sync badge */
 	.sync-badge {
-		font-size: 0.75rem;
-		padding: 0.25rem 0.5rem;
+		font-size: 0.68rem;
+		padding: 0.2rem 0.55rem;
 		border-radius: 999px;
 		border: 1px solid transparent;
-		width: fit-content;
+		white-space: nowrap;
+		font-weight: 600;
+		flex-shrink: 0;
 	}
 
 	.sync-badge.pending,
 	.sync-badge.syncing {
-		background: #fff7e8;
-		color: #835500;
-		border-color: #f6da9b;
+		background: #fffbeb;
+		color: #92400e;
+		border-color: #fde68a;
 	}
 
 	.sync-badge.failed,
 	.sync-badge.offline {
-		background: #fff1f1;
-		color: #8f1f17;
-		border-color: #ffd4d1;
+		background: #fef2f2;
+		color: #991b1b;
+		border-color: #fecaca;
 	}
 
+	/* Delete error */
 	.delete-error {
-		background: #fff1f1;
-		border: 1px solid #ffd5d2;
-		border-radius: 0.5rem;
-		padding: 0.65rem 0.75rem;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 0.65rem;
+		padding: 0.75rem 1rem;
+	}
+
+	.delete-error svg {
+		width: 1rem;
+		height: 1rem;
+		flex-shrink: 0;
+		margin-top: 0.15rem;
+		color: #dc2626;
 	}
 
 	.delete-error p {
 		margin: 0;
-		color: #b42318;
+		color: #991b1b;
 		font-size: 0.9rem;
 	}
 
+	/* Actions */
 	.actions {
-		margin-top: 0.5rem;
-		display: grid;
-		gap: 0.5rem;
+		display: flex;
+		gap: 0.65rem;
+		margin-top: 0.25rem;
 	}
 
 	.edit-btn {
@@ -373,35 +577,48 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 100%;
-		border: 1px solid #7ce3ba;
+		gap: 0.4rem;
+		flex: 1;
+		border: 1px solid #d1fae5;
+		background: #f0fdf4;
 		color: #047857;
-		border-radius: 0.6rem;
-		padding: 0.65rem 1rem;
+		border-radius: 0.65rem;
+		padding: 0.7rem 1rem;
 		font-weight: 600;
-		font-size: 1rem;
-		text-align: center;
-		box-sizing: border-box;
+		font-size: 0.9rem;
+		transition: background 0.15s, border-color 0.15s;
+	}
+
+	.edit-btn:hover {
+		background: #dcfce7;
+		border-color: #a7f3d0;
+	}
+
+	.edit-btn svg {
+		width: 0.9rem;
+		height: 0.9rem;
 	}
 
 	.delete-btn {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 100%;
-		background: #dc2626;
-		color: white;
-		border: none;
-		border-radius: 0.6rem;
-		padding: 0.65rem 1rem;
+		gap: 0.4rem;
+		flex: 1;
+		background: white;
+		color: #dc2626;
+		border: 1px solid #fecaca;
+		border-radius: 0.65rem;
+		padding: 0.7rem 1rem;
 		font-weight: 600;
-		font-size: 1rem;
+		font-size: 0.9rem;
 		cursor: pointer;
-		box-sizing: border-box;
+		transition: background 0.15s, border-color 0.15s;
 	}
 
 	.delete-btn:hover {
-		background: #b91c1c;
+		background: #fef2f2;
+		border-color: #fca5a5;
 	}
 
 	.delete-btn:disabled {
@@ -409,6 +626,21 @@
 		cursor: not-allowed;
 	}
 
+	.delete-btn svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+
+	.delete-spinner {
+		width: 14px;
+		height: 14px;
+		border: 2px solid #fecaca;
+		border-top-color: #dc2626;
+		border-radius: 50%;
+		animation: spin 0.6s linear infinite;
+	}
+
+	/* Mobile bottom bar */
 	.mobile-bottom-bar {
 		display: none;
 	}
@@ -422,23 +654,30 @@
 			display: flex;
 			padding: 0.65rem 1rem;
 			padding-bottom: calc(0.65rem + env(safe-area-inset-bottom));
-			background: #f4f5f7;
-			border-top: 1px solid #7ce3ba;
+			background: white;
+			border-top: 1px solid #e5e7eb;
 			z-index: 50;
+			box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
 		}
 
 		.mobile-back-btn {
 			display: flex;
 			align-items: center;
 			justify-content: center;
+			gap: 0.4rem;
 			width: 100%;
 			background: #047857;
 			color: white;
 			text-decoration: none;
-			padding: 0.75rem;
-			border-radius: 0.6rem;
+			padding: 0.7rem;
+			border-radius: 0.65rem;
 			font-weight: 600;
-			font-size: 1rem;
+			font-size: 0.9rem;
+		}
+
+		.mobile-back-btn svg {
+			width: 1rem;
+			height: 1rem;
 		}
 
 		.detail-page {
@@ -452,11 +691,7 @@
 
 	@media (min-width: 720px) {
 		.detail-page {
-			padding: 1rem 2rem 2rem;
-		}
-
-		.sighting-detail {
-			max-width: 600px;
+			padding: 1.25rem 2rem 2rem;
 		}
 
 		.sighting-image {
@@ -464,25 +699,29 @@
 		}
 
 		.species-name {
-			font-size: 2.25rem;
+			font-size: 2rem;
 		}
 	}
 
 	@media (max-width: 480px) {
 		.detail-page {
-			padding: 0.5rem 0.75rem 1.5rem;
+			padding: 0.75rem 1rem 1.5rem;
 		}
 
 		.info-section {
-			padding: 1rem;
+			padding: 1.15rem;
 		}
 
 		.species-name {
-			font-size: 1.75rem;
+			font-size: 1.5rem;
 		}
 
 		.sighting-image {
 			max-height: 280px;
+		}
+
+		.actions {
+			flex-direction: column;
 		}
 	}
 </style>

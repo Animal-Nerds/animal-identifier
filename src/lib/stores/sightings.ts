@@ -283,12 +283,17 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		}
 
 		try {
-			const serverSightings = await this.sightingsService.getSightings();
+			const raw = await this.sightingsService.getSightings();
+			const serverSightings = Array.isArray(raw) ? raw : (raw as { data?: unknown })?.data ?? [];
+			if (!Array.isArray(serverSightings)) {
+				console.error('[STORE] getSightings returned non-array:', typeof raw, raw);
+				throw new Error('getSightings did not return an array');
+			}
 			const localUnsynced = get(this.store).sightings.filter(
 				(sighting) => sighting.syncStatus !== 'SYNCED'
 			);
 
-			const merged = [...serverSightings.map((item: Sighting) => ({ ...item, syncStatus: 'SYNCED' as SyncStatus }))];
+			const merged = [...(serverSightings as Sighting[]).map((item: Sighting) => ({ ...item, syncStatus: 'SYNCED' as SyncStatus }))];
 			for (const localSighting of localUnsynced) {
 				const idx = this.findSightingIndex(merged, localSighting.id);
 				if (idx > -1) {

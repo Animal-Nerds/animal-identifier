@@ -36,7 +36,7 @@ test.describe.serial('offline PWA behavior', () => {
 		await page.getByRole('button', { name: 'Create Sighting' }).click();
 
 		await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
-		await expect(page.getByRole('heading', { name: species, level: 3 })).toBeVisible({
+		await expect(page.getByRole('heading', { name: species, level: 2 })).toBeVisible({
 			timeout: 30_000
 		});
 	});
@@ -65,13 +65,13 @@ test.describe.serial('offline PWA behavior', () => {
 		await page.getByLabel('Password').fill(PASSWORD);
 		await page.getByRole('button', { name: 'Log In' }).click();
 		await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
-		await expect(page.getByRole('heading', { name: species, level: 3 })).toBeVisible({
+		await expect(page.getByRole('heading', { name: species, level: 2 })).toBeVisible({
 			timeout: 30_000
 		});
 
 		// Reload — init() loads from IDB first, then syncs with server
 		await page.reload();
-		await expect(page.getByRole('heading', { name: species, level: 3 })).toBeVisible({
+		await expect(page.getByRole('heading', { name: species, level: 2 })).toBeVisible({
 			timeout: 30_000
 		});
 	});
@@ -85,7 +85,7 @@ test.describe.serial('offline PWA behavior', () => {
 		await page.getByLabel('Password').fill(PASSWORD);
 		await page.getByRole('button', { name: 'Log In' }).click();
 		await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
-		await expect(page.getByRole('heading', { name: species, level: 3 })).toBeVisible({
+		await expect(page.getByRole('heading', { name: species, level: 2 })).toBeVisible({
 			timeout: 30_000
 		});
 
@@ -95,7 +95,7 @@ test.describe.serial('offline PWA behavior', () => {
 		await page.getByRole('button', { name: 'Delete sighting' }).first().click();
 
 		// Should vanish immediately (optimistic remove)
-		await expect(page.getByRole('heading', { name: species, level: 3 })).not.toBeVisible({
+		await expect(page.getByRole('heading', { name: species, level: 2 })).not.toBeVisible({
 			timeout: 5_000
 		});
 
@@ -106,7 +106,7 @@ test.describe.serial('offline PWA behavior', () => {
 			timeout: 30_000
 		});
 		// Sighting should still be gone after server sync
-		await expect(page.getByRole('heading', { name: species, level: 3 })).not.toBeVisible({
+		await expect(page.getByRole('heading', { name: species, level: 2 })).not.toBeVisible({
 			timeout: 5_000
 		});
 	});
