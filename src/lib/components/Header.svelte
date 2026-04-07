@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SyncStatus from './SyncStatus.svelte';
 	import type { UserProfile } from '$lib/db/schema';
 	import { goto } from '$app/navigation';
 
@@ -11,6 +12,8 @@
 		<div class="branding">
 			<h1>Animal Identifier</h1>
 		</div>
+
+		<SyncStatus />
 
         <div class="user-section {user ? '' : 'hidden'}">
             <button class="menu-toggle" onclick={() => (isOpen = !isOpen)} aria-label="Menu">
