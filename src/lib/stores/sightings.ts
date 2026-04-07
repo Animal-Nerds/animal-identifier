@@ -156,9 +156,15 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		await this.upsertSightingInIDB({ ...sighting, syncStatus });
 	}
 	private readonly handleOnline = () => {
-		this.syncPendingAndReload().catch((err) => {
-			console.error('Online sync failed:', err);
-		});
+		// Small delay to let the network stabilize after the online event fires
+		setTimeout(() => {
+			this.syncPendingAndReload().catch((err) => {
+				const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+				if (!isOffline) {
+					console.error('Online sync failed:', err);
+				}
+			});
+		}, 1000);
 	};
 
 	constructor(
@@ -193,34 +199,36 @@ class SightingsStore implements Readable<SightingsStoreState> {
 	private toCreatePayload(
 		sighting: Sighting
 	): Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'> {
-		const {
-			id: _id,
-			createdAt: _createdAt,
-			updatedAt: _updatedAt,
-			syncStatus: _syncStatus,
-			userId: _userId,
-			...rest
-		} = sighting;
-		return rest as Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'>;
+		// Only send fields the POST endpoint accepts — avoid server-managed fields
+		const payload: Record<string, unknown> = {};
+		if (sighting.species !== undefined) payload.species = sighting.species;
+		if (sighting.description !== undefined) payload.description = sighting.description;
+		if (sighting.latitude !== undefined) payload.latitude = sighting.latitude;
+		if (sighting.longitude !== undefined) payload.longitude = sighting.longitude;
+		if (sighting.images !== undefined) payload.images = sighting.images;
+		return payload as Omit<Sighting, 'id' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'userId'>;
 	}
 
 	private toUpdatePayload(
 		sighting: Sighting
 	): Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>> {
-		const {
-			id: _id,
-			createdAt: _createdAt,
-			userId: _userId,
-			syncStatus: _syncStatus,
-			...rest
-		} = sighting;
-		return rest as Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>>;
+		// Only send fields the PUT endpoint accepts — avoid server-managed fields
+		const payload: Record<string, unknown> = {};
+		if (sighting.species !== undefined) payload.species = sighting.species;
+		if (sighting.description !== undefined) payload.description = sighting.description;
+		if (sighting.latitude !== undefined) payload.latitude = sighting.latitude;
+		if (sighting.longitude !== undefined) payload.longitude = sighting.longitude;
+		if (sighting.images !== undefined) payload.images = sighting.images;
+		return payload as Partial<Omit<Sighting, 'id' | 'createdAt' | 'userId' | 'syncStatus'>>;
 	}
 
 	private async runSyncPendingAndReload(): Promise<void> {
+		// Don't attempt sync when offline — wait for the online event
+		const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+		if (isOffline) return;
+
 		await this.ensureDBReady();
 		this.store.update((s) => ({ ...s, loading: true, error: null }));
-
 
 		let syncError: string | null = null;
 		const current = get(this.store);
@@ -411,7 +419,14 @@ class SightingsStore implements Readable<SightingsStoreState> {
 			}
 			return { ...s, error: null };
 		});
-		await this.updateSightingStatusInIDB(id, 'PENDING' as SyncStatus);
+
+		// Persist the full updated sighting to IDB (not just status)
+		const updatedSighting = get(this.store).sightings.find((s) => s.id === id);
+		if (updatedSighting) await this.upsertSightingInIDB(updatedSighting);
+
+		// If offline, save locally and let syncPendingAndReload handle it on reconnect
+		const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+		if (isOffline) return;
 
 		try {
 			this.store.update((s) => ({ ...s, loading: true }));

@@ -216,5 +216,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             .returning();
     }
 
-    return json({ ...created, images: savedImages }, { status: 201 });
+    return json({
+        id: created.id,
+        userId: created.userId,
+        species: created.species,
+        description: created.description ?? undefined,
+        latitude: created.latitude ?? 0,
+        longitude: created.longitude ?? 0,
+        createdAt: created.createdAt instanceof Date ? created.createdAt.toISOString() : String(created.createdAt),
+        updatedAt: created.updatedAt instanceof Date ? created.updatedAt.toISOString() : String(created.updatedAt),
+        imageUrl: firstImage ?? undefined,
+        images: savedImages,
+        syncStatus: 'SYNCED' as SyncStatus
+    }, { status: 201 });
 };
