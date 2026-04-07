@@ -159,7 +159,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		// Small delay to let the network stabilize after the online event fires
 		setTimeout(() => {
 			this.syncPendingAndReload().catch((err) => {
-				const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+				const isOffline = typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine;
 				if (!isOffline) {
 					console.error('Online sync failed:', err);
 				}
@@ -224,7 +224,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 
 	private async runSyncPendingAndReload(): Promise<void> {
 		// Don't attempt sync when offline — wait for the online event
-		const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+		const isOffline = typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine;
 		if (isOffline) return;
 
 		await this.ensureDBReady();
@@ -425,7 +425,7 @@ class SightingsStore implements Readable<SightingsStoreState> {
 		if (updatedSighting) await this.upsertSightingInIDB(updatedSighting);
 
 		// If offline, save locally and let syncPendingAndReload handle it on reconnect
-		const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+		const isOffline = typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine;
 		if (isOffline) return;
 
 		try {
