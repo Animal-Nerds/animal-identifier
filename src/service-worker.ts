@@ -81,6 +81,9 @@ sw.addEventListener('fetch', (event) => {
 				} catch {
 					const cachedResponse = await caches.match(event.request);
 					if (cachedResponse) return cachedResponse;
+					// Try the root shell as a fallback for any page
+					const shellResponse = await caches.match('/');
+					if (shellResponse) return shellResponse;
 					return new Response('Network unavailable', {
 						status: 503,
 						statusText: 'Service Unavailable'
@@ -98,6 +101,13 @@ sw.addEventListener('fetch', (event) => {
 				const cachedResponse = await caches.match(event.request);
 				if (cachedResponse) return cachedResponse;
 
+				// Immutable build assets not in THIS cache belong to a different build version.
+				// Don't intercept — let the browser fetch from network directly so it doesn't
+				// get a 503 from an old SW that doesn't have chunks from a newer build.
+				if (requestUrl.pathname.startsWith('/_app/immutable/')) {
+					return fetch(event.request);
+				}
+
 				try {
 					const networkResponse = await fetch(event.request);
 					if (networkResponse.ok && !networkResponse.redirected) {
@@ -106,6 +116,11 @@ sw.addEventListener('fetch', (event) => {
 					}
 					return networkResponse;
 				} catch {
+					// For offline navigation fallback, try serving the cached root shell
+					if (event.request.mode === 'navigate') {
+						const shellResponse = await caches.match('/');
+						if (shellResponse) return shellResponse;
+					}
 					return new Response('Network unavailable', {
 						status: 503,
 						statusText: 'Service Unavailable'
