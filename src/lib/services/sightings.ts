@@ -40,7 +40,10 @@ export async function getSightings(page?: number, limit?: number) {
     }
   };
   let response = await apiFetch(baseUrl, options);
-  return response;
+  // API returns { data: [...], total, page, limit } — extract the array
+  if (Array.isArray(response)) return response;
+  if (response?.data && Array.isArray(response.data)) return response.data;
+  return [];
 }
 
 export async function getSightingById(id: string) {
