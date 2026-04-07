@@ -111,14 +111,7 @@
 		<h2>Create your account</h2>
 		<p class="sub-msg">Join to save and share your wildlife sightings.</p>
 
-		<form
-			novalidate
-			aria-describedby="form-error"
-			onsubmit={(e) => {
-				e.preventDefault();
-				void submitSignup();
-			}}
-		>
+		<form onsubmit={submitSignup} novalidate aria-describedby="form-error">
 			<div class="field">
 				<label for="email">Email</label>
 				<input

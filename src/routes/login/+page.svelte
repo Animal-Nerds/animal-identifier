@@ -95,14 +95,7 @@
 		<h2>Welcome back!</h2>
 		<p class="sub-msg">Sign in to keep tracking your wildlife sightings.</p>
 
-		<form
-			novalidate
-			aria-describedby="form-error"
-			onsubmit={(e) => {
-				e.preventDefault();
-				void submitLogin();
-			}}
-		>
+		<form onsubmit={submitLogin} novalidate aria-describedby="form-error">
 			<div class="field">
 				<label for="email">Email</label>
 				<input
